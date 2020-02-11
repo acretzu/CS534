@@ -6,6 +6,7 @@ import re
 from optparse import OptionParser
 
 __options__ = None
+starting_board = []
 
 #
 # parse command line
@@ -33,13 +34,40 @@ def parse_cmd_line_options():
 
     return options
 
+#
+# Open the CSV file and get board information
+# Format: <Queen Weight>,<Queen Position>
+#
+def parse_csv_file():
+    file_ptr = open(__options__.csv, "r")
+    ret_array = []
 
+    # Error out if we can't open the file
+    if not file_ptr:
+        print("Unable to open file: %s" % __options__.csv)
+        sys.exit(1)
+
+    # Loop thru each line and extract wieght and position
+    for line in file_ptr:
+        csv_info = line.split(",")
+        i = 0
+        while i < len(csv_info):
+            queen_weight = int(csv_info[i])
+            queen_position = int(csv_info[i+1])
+            # Add weight and position as a tuple into array
+            ret_array.append((queen_weight, queen_position))
+            i += 2
+
+    return ret_array
 
 
 
 #####################
 # Script Start
 #####################
-print('Hello World!')
 
 __options__ = parse_cmd_line_options()
+starting_board = parse_csv_file()
+
+for queen in starting_board:
+    print("Queen weight = %d, Queen position = %d" % (queen[0], queen[1]))
