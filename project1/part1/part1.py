@@ -12,7 +12,7 @@ __options__ = None
 #
 def parse_cmd_line_options():
     parser = OptionParser()
-    parser.add_option("--h", action="store", type="int", dest="heuristic", default=1, help="The heuristic.")
+    parser.add_option("--e", action="store", type="int", dest="heuristic", default=1, help="The heuristic.")
     parser.add_option("--a", action="store", type="int", dest="algorithm", default=1, help="The algorithm.")
     parser.add_option("--f", action="store", type="string", dest="csv", default="", help="The local path to the CSV file.")
 
