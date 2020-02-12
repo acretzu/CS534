@@ -4,6 +4,9 @@ import os
 import sys
 import re
 from optparse import OptionParser
+import math
+
+
 
 __options__ = None
 starting_board = []
@@ -60,6 +63,157 @@ def parse_csv_file():
 
     return ret_array
 
+
+################################################
+# Board (N_QueenChess Game)
+################################################
+class N_QueenChess:
+
+    def __init__(self, columns, weights):
+        self.columns = columns
+        self.weights = weights
+
+    #     def start_game(self):
+    #         self.columns = [random.randint(0, (self.size - 1)) for i in range(self.size)]
+    #         self.weights = [random.randint(1, 9) for i in range(self.size)]
+
+    def play(self, queen_to_move, move_to_where):
+
+        """
+            Play next move
+
+            Input:
+                queen_to_move: the column number (which queen to move)
+                move_to_where: move to which row
+
+        """
+        self.columns[queen_to_move] = move_to_where
+
+    def cost(self, queen_to_move, move_to_where):
+
+        """
+            Calculate the cost of one move
+
+            Input:
+                queen_to_move: the column number (which queen to move)
+                move_to_where: move to which row
+
+            Output:
+                cost of this move
+
+        """
+
+        cost = self.weights[queen_to_move] * (self.columns[queen_to_move] - move_to_where)
+
+        return cost
+
+    def display(self):
+        for column in range(self.size):
+            for row in range(self.size):
+                if column == self.columns[row]:
+                    print('Q', end=' ')
+                else:
+                    print('.', end=' ')
+            print()
+
+    def h1(self):
+
+        """
+            check heuristics 1
+            Input:
+                s: the current state of the game
+
+            Outputs:
+                h1: The lightest Queen across all pairs of Queens attacking each other.
+                    Moving that Queen is the minimum possible cost to solve the problem
+        """
+
+        attack_queen_list = set()
+
+        for queen_column in range(self.size):
+            for compare_column in range(queen_column + 1, self.size):
+                if self.columns[queen_column] == self.columns[compare_column]:
+                    attack_queen_list.add(queen_column)
+                    attack_queen_list.add(compare_column)
+
+                elif queen_column - self.columns[queen_column] == compare_column - self.columns[compare_column]:
+                    attack_queen_list.add(queen_column)
+                    attack_queen_list.add(compare_column)
+
+                elif self.columns[queen_column] - queen_column == compare_column - self.columns[compare_column]:
+                    attack_queen_list.add(queen_column)
+                    attack_queen_list.add(compare_column)
+
+        h1 = min([self.weight[i] for i in attack_queen_list]) ** 2
+
+        return h1
+
+    def h2(self):
+
+        """
+            check heuristics 2
+            Input:
+                s: the current state of the game
+
+            Outputs:
+                h2: Sum across every pair of attacking Queens the weight of the lightest Queen.
+        """
+
+        attack_queen_pair_list = set()
+
+        for queen_column in range(self.size):
+            for compare_column in range(queen_column + 1, self.size):
+                if self.columns[queen_column] == self.columns[compare_column]:
+                    attack_queen_pair_list.add((queen_column, compare_column))
+
+                elif queen_column - self.columns[queen_column] == compare_column - self.columns[compare_column]:
+                    attack_queen_pair_list.add((queen_column, compare_column))
+
+                elif self.columns[queen_column] - queen_column == compare_column - self.columns[compare_column]:
+                    attack_queen_pair_list.add((queen_column, compare_column))
+
+        h2 = sum([min(self.weight[i], self.weight[j]) ** 2 for i, j in attack_queen_pair_list])
+
+        return h2
+
+    def check(self):
+        '''
+            check if the game has ended.
+            Input:
+                s: the current state of the game
+
+            Outputs:
+                n_attack: the result (numbers of pairs of attacking Queen)
+
+        '''
+        n_attack = 0
+
+        for queen_column in range(self.size):
+            for compare_column in range(queen_column + 1, self.size):
+                if self.columns[queen_column] == self.columns[compare_column]:
+                    n_attack = n_attack + 1
+
+                elif queen_column - self.columns[queen_column] == compare_column - self.columns[compare_column]:
+                    n_attack = n_attack + 1
+
+                elif self.columns[queen_column] - queen_column == compare_column - self.columns[compare_column]:
+                    n_attack = n_attack + 1
+
+        return n_attack
+
+################################################
+# Nodes being tracked
+################################################
+
+class Node():
+
+    def __init__(self, columns, weights, parent=None, isleaf= False, cost=0):
+        self.columns = columns
+        self.weights = weights
+        self.isleaf = isleaf
+        self.parent = parent
+        self.cost = cost
+        self.children= []
 
 
 #####################
