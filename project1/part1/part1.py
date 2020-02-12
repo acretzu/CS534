@@ -67,7 +67,7 @@ def parse_csv_file():
 ################################################
 # Board (N_QueenChess Game)
 ################################################
-class N_QueenChess:
+class N_QueenChess():
 
     def __init__(self, columns, weights):
         self.columns = columns
