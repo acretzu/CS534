@@ -18,7 +18,7 @@ def parse_cmd_line_options():
     parser = OptionParser()
     parser.add_option("--e", action="store", type="int", dest="heuristic", default=1, help="The heuristic.")
     parser.add_option("--a", action="store", type="int", dest="algorithm", default=1, help="The algorithm.")
-    parser.add_option("--f", action="store", type="string", dest="csv", default="", help="The local path to the CSV file.")
+    parser.add_option("--f", action="store", type="string", dest="csv", default="dummy.csv", help="The local path to the CSV file.")
 
     (options, args) = parser.parse_args()
 
