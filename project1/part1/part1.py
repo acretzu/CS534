@@ -7,7 +7,9 @@ from optparse import OptionParser
 import math
 
 
-
+#
+# Global Variables
+#
 __options__ = None
 starting_board = []
 
@@ -50,17 +52,24 @@ def parse_csv_file():
         print("Unable to open file: %s" % __options__.csv)
         sys.exit(1)
 
-    # Loop thru each line and extract wieght and position
+    # Loop thru each line (row) and extract wieght and col
+    row = 0
     for line in file_ptr:
-        csv_info = line.split(",")
-        i = 0
-        while i < len(csv_info):
-            queen_weight = int(csv_info[i])
-            queen_position = int(csv_info[i+1])
-            # Add weight and position as a tuple into array
-            ret_array.append((queen_weight, queen_position))
-            i += 2
+        csv_line = line.split(",")
 
+        # Loop thru each col to see if there is a queen
+        col = 0
+        while col < len(csv_line):
+            # Strip away any whitespace (/r or /n) and check for a digit
+            if(str.isdigit(csv_line[col].strip())):
+                weight = int(csv_line[col].strip())
+                # Add row, col, weight as a tuple into array
+                ret_array.append((row+1, col+1, weight))            
+            col += 1
+            
+        row += 1
+
+    file_ptr.close()
     return ret_array
 
 
@@ -107,14 +116,15 @@ class N_QueenChess():
 
         return cost
 
-    def display(self):
-        for column in range(self.size):
-            for row in range(self.size):
-                if column == self.columns[row]:
-                    print('Q', end=' ')
-                else:
-                    print('.', end=' ')
-            print()
+    # acretzu - Commenting out due to errors. Please fix!
+    # def display(self):
+    #     for column in range(self.size):
+    #         for row in range(self.size):
+    #             if column == self.columns[row]:
+    #                 print('Q', end=' ')
+    #             else:
+    #                 print('.', end=' ')
+    #         print()
 
     def h1(self):
 
@@ -224,4 +234,4 @@ __options__ = parse_cmd_line_options()
 starting_board = parse_csv_file()
 
 for queen in starting_board:
-    print("Queen weight = %d, Queen position = %d" % (queen[0], queen[1]))
+    print("Queen weight = %d, Queen row = %d, Queen col = %d" % (queen[0], queen[1], queen[2]))
