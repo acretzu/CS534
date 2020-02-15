@@ -9,39 +9,37 @@ import math
 
 
 __options__ = None
-starting_board = []
+starting_map = []
+
+INDUSTRIAL_MAX = 0
+COMMERCIAL_MAX = 0
+RESIDENTIAL_MAX = 0
 
 #
 # parse command line
 #
 def parse_cmd_line_options():
     parser = OptionParser()
-    parser.add_option("--e", action="store", type="int", dest="heuristic", default=1, help="The heuristic.")
-    parser.add_option("--a", action="store", type="int", dest="algorithm", default=1, help="The algorithm.")
-    parser.add_option("--f", action="store", type="string", dest="csv", default="dummy.csv", help="The local path to the CSV file.")
+    parser.add_option("--f", action="store", type="string", dest="csv", default="urban_2.txt", help="The local path to the CSV file.")
+    parser.add_option("--e", action="store", type="string", dest="algorithm", default="HC", help="The algorithm.")
 
     (options, args) = parser.parse_args()
 
     # Check that all options have been provided
-    if not options.heuristic:
-        print("Execution requires heurisitic (1 for H1 or 2 for H2).")
-        sys.exit(1)
-
     if not os.path.isfile(options.csv):
         print("Execution requires path to CSV file.")
         sys.exit(1)
 
     if not options.algorithm:
-        print("Execution requires algorithm. (1 for A* or 2 for Hill Climbing).")
+        print("Execution requires algorithm. (GA for genetic algorithm or HC for hill climbing).")
         sys.exit(1)
 
     return options
 
 #
-# Open the CSV file and get board information
-# Format: <Queen Weight>,<Queen Position>
+# Open the CSV file and copy map
 #
-def parse_csv_file():
+def parse_csv_file_map():
     file_ptr = open(__options__.csv, "r")
     ret_array = []
 
@@ -50,178 +48,162 @@ def parse_csv_file():
         print("Unable to open file: %s" % __options__.csv)
         sys.exit(1)
 
-    # Loop thru each line and extract wieght and position
+    # Get the first three values for industrial, commercial, residential maximums
     for line in file_ptr:
-        csv_info = line.split(",")
-        i = 0
-        while i < len(csv_info):
-            queen_weight = int(csv_info[i])
-            queen_position = int(csv_info[i+1])
-            # Add weight and position as a tuple into array
-            ret_array.append((queen_weight, queen_position))
-            i += 2
+        csv_info = line.split(',')
+        csv_info[-1] = csv_info[-1].strip()
+
+        # Add the line to the return array
+        if(len(csv_info) > 1):
+            ret_array.append(csv_info)
 
     return ret_array
 
+#
+# Open the CSV file and get the maximums
+#
+def parse_csv_file_maximums():
+    file_ptr = open(__options__.csv, "r")
+    loc_maximums = []
+
+    # Error out if we can't open the file
+    if not file_ptr:
+        print("Unable to open file: %s" % __options__.csv)
+        sys.exit(1)
+
+    # Get the first three values for industrial, commercial, residential maximums
+    for line in file_ptr:
+        csv_info = line.split(',')
+        csv_info[-1] = csv_info[-1].strip()
+
+        if(len(csv_info) == 1):
+            loc_maximum = int(csv_info[0])
+            loc_maximums.append(loc_maximum)
+
+    return loc_maximums
+
 
 ################################################
-# Board (N_QueenChess Game)
+# Map
 ################################################
-class N_QueenChess():
 
-    def __init__(self, columns, weights):
-        self.columns = columns
-        self.weights = weights
 
-    #     def start_game(self):
-    #         self.columns = [random.randint(0, (self.size - 1)) for i in range(self.size)]
-    #         self.weights = [random.randint(1, 9) for i in range(self.size)]
+class Map:
 
-    def play(self, queen_to_move, move_to_where):
+    def __init__(self, starting_map):
+        self.map = starting_map
+        self.score = 0
+        self.industrial = 0
+        self.commercial = 0
+        self.residential = 0
+
+    def place_site(self, site_type, x, y):
 
         """
-            Play next move
+            Checks if sites have reached maximum
+            Checks if the square is valid
+            Places site
 
             Input:
-                queen_to_move: the column number (which queen to move)
-                move_to_where: move to which row
+                site_type: the type of site to place on the map (0, 1, 2)
+                x: x-coordinate
+                y: y-coordinate
 
         """
-        self.columns[queen_to_move] = move_to_where
 
-    def cost(self, queen_to_move, move_to_where):
+        # Checks if sites have reached maximum
+        if (site_type == 0 and self.industrial == INDUSTRIAL_MAX):
+            return
+        if (site_type == 1 and self.commercial == COMMERCIAL_MAX):
+            return
+        if (site_type == 2 and self.residential == RESIDENTIAL_MAX):
+            return
+
+        # Checks if the square is valid
+        if self.map[x][y] == 'X':
+            return
+
+    def place_all(self):
 
         """
-            Calculate the cost of one move
+            Places all sites on random places on the map
 
             Input:
-                queen_to_move: the column number (which queen to move)
-                move_to_where: move to which row
+                None
+
+        """
+
+        for x in range(len(starting_map)):
+            for y in range(len(starting_map[x])):
+                print(starting_map[x][y])
+
+    def penalty(self):
+
+        """
+            Calculate total penalty of the map
+
+            Input:
+                None
 
             Output:
-                cost of this move
+                penalty: int
 
         """
 
-        cost = self.weights[queen_to_move] * (self.columns[queen_to_move] - move_to_where)
-
-        return cost
-
-    def display(self):
-        for column in range(self.size):
-            for row in range(self.size):
-                if column == self.columns[row]:
-                    print('Q', end=' ')
-                else:
-                    print('.', end=' ')
-            print()
-
-    def h1(self):
+    def score(self):
 
         """
-            check heuristics 1
+            Update total score of the map
+
             Input:
-                s: the current state of the game
-
-            Outputs:
-                h1: The lightest Queen across all pairs of Queens attacking each other.
-                    Moving that Queen is the minimum possible cost to solve the problem
-        """
-
-        attack_queen_list = set()
-
-        for queen_column in range(self.size):
-            for compare_column in range(queen_column + 1, self.size):
-                if self.columns[queen_column] == self.columns[compare_column]:
-                    attack_queen_list.add(queen_column)
-                    attack_queen_list.add(compare_column)
-
-                elif queen_column - self.columns[queen_column] == compare_column - self.columns[compare_column]:
-                    attack_queen_list.add(queen_column)
-                    attack_queen_list.add(compare_column)
-
-                elif self.columns[queen_column] - queen_column == compare_column - self.columns[compare_column]:
-                    attack_queen_list.add(queen_column)
-                    attack_queen_list.add(compare_column)
-
-        h1 = min([self.weight[i] for i in attack_queen_list]) ** 2
-
-        return h1
-
-    def h2(self):
+                None
 
         """
-            check heuristics 2
+
+    def crossover(self, partner_map):
+
+        """
+            Combine two maps to create a new map
+
             Input:
-                s: the current state of the game
+                partner_map: another map to crossover with
 
-            Outputs:
-                h2: Sum across every pair of attacking Queens the weight of the lightest Queen.
+            Output:
+                map: new 2d array representing a new map
+
         """
 
-        attack_queen_pair_list = set()
+    def mutate(self):
 
-        for queen_column in range(self.size):
-            for compare_column in range(queen_column + 1, self.size):
-                if self.columns[queen_column] == self.columns[compare_column]:
-                    attack_queen_pair_list.add((queen_column, compare_column))
+        """
+            Make a random swap of two sites on the map
 
-                elif queen_column - self.columns[queen_column] == compare_column - self.columns[compare_column]:
-                    attack_queen_pair_list.add((queen_column, compare_column))
-
-                elif self.columns[queen_column] - queen_column == compare_column - self.columns[compare_column]:
-                    attack_queen_pair_list.add((queen_column, compare_column))
-
-        h2 = sum([min(self.weight[i], self.weight[j]) ** 2 for i, j in attack_queen_pair_list])
-
-        return h2
-
-    def check(self):
-        '''
-            check if the game has ended.
             Input:
-                s: the current state of the game
+                None
 
-            Outputs:
-                n_attack: the result (numbers of pairs of attacking Queen)
+        """
 
-        '''
-        n_attack = 0
+    def print(self):
 
-        for queen_column in range(self.size):
-            for compare_column in range(queen_column + 1, self.size):
-                if self.columns[queen_column] == self.columns[compare_column]:
-                    n_attack = n_attack + 1
+        """
+            Print the map in block format
 
-                elif queen_column - self.columns[queen_column] == compare_column - self.columns[compare_column]:
-                    n_attack = n_attack + 1
+            Input:
+                None
 
-                elif self.columns[queen_column] - queen_column == compare_column - self.columns[compare_column]:
-                    n_attack = n_attack + 1
-
-        return n_attack
-
-################################################
-# Nodes being tracked
-################################################
-
-class Node():
-
-    def __init__(self, columns, weights, parent=None, isleaf= False, cost=0):
-        self.columns = columns
-        self.weights = weights
-        self.isleaf = isleaf
-        self.parent = parent
-        self.cost = cost
-        self.children= []
-
+        """
 
 #####################
 # Script Start
 #####################
 
 __options__ = parse_cmd_line_options()
-starting_board = parse_csv_file()
+starting_map = parse_csv_file_map()
+loc_maximums = parse_csv_file_maximums()
 
-for queen in starting_board:
-    print("Queen weight = %d, Queen position = %d" % (queen[0], queen[1]))
+INDUSTRIAL_MAX = loc_maximums[0]
+COMMERCIAL_MAX = loc_maximums[1]
+RESIDENTIAL_MAX = loc_maximums[2]
+
+# Print the 2d map
+print(starting_map)
