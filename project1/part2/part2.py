@@ -5,8 +5,7 @@ import sys
 import re
 from optparse import OptionParser
 import math
-
-
+import random
 
 __options__ = None
 starting_map = []
@@ -15,12 +14,14 @@ INDUSTRIAL_MAX = 0
 COMMERCIAL_MAX = 0
 RESIDENTIAL_MAX = 0
 
+
 #
 # parse command line
 #
 def parse_cmd_line_options():
     parser = OptionParser()
-    parser.add_option("--f", action="store", type="string", dest="csv", default="urban_2.txt", help="The local path to the CSV file.")
+    parser.add_option("--f", action="store", type="string", dest="csv", default="urban_2.txt",
+                      help="The local path to the CSV file.")
     parser.add_option("--e", action="store", type="string", dest="algorithm", default="HC", help="The algorithm.")
 
     (options, args) = parser.parse_args()
@@ -35,6 +36,7 @@ def parse_cmd_line_options():
         sys.exit(1)
 
     return options
+
 
 #
 # Open the CSV file and copy map
@@ -54,10 +56,11 @@ def parse_csv_file_map():
         csv_info[-1] = csv_info[-1].strip()
 
         # Add the line to the return array
-        if(len(csv_info) > 1):
+        if (len(csv_info) > 1):
             ret_array.append(csv_info)
 
     return ret_array
+
 
 #
 # Open the CSV file and get the maximums
@@ -76,7 +79,7 @@ def parse_csv_file_maximums():
         csv_info = line.split(',')
         csv_info[-1] = csv_info[-1].strip()
 
-        if(len(csv_info) == 1):
+        if (len(csv_info) == 1):
             loc_maximum = int(csv_info[0])
             loc_maximums.append(loc_maximum)
 
@@ -102,6 +105,7 @@ class Map:
         """
             Checks if sites have reached maximum
             Checks if the square is valid
+            Adds cost of placing
             Places site
 
             Input:
@@ -112,16 +116,36 @@ class Map:
         """
 
         # Checks if sites have reached maximum
-        if (site_type == 0 and self.industrial == INDUSTRIAL_MAX):
-            return
-        if (site_type == 1 and self.commercial == COMMERCIAL_MAX):
-            return
-        if (site_type == 2 and self.residential == RESIDENTIAL_MAX):
-            return
+        if (site_type == 'I' and self.industrial == INDUSTRIAL_MAX):
+            return 0
+        if (site_type == 'C' and self.commercial == COMMERCIAL_MAX):
+            return 0
+        if (site_type == 'R' and self.residential == RESIDENTIAL_MAX):
+            return 0
 
-        # Checks if the square is valid
+        # Checks if the square is invalid
         if self.map[x][y] == 'X':
-            return
+            return 1
+
+        # Compute cost and add
+        if self.map[x][y] == 'S':
+            cost = 1
+        else:
+            cost = int(self.map[x][y]) + 2
+        self.score += cost
+
+        # Place the site
+        self.map[x][y] = site_type
+
+        # Increment
+        if (site_type == 'I'):
+            self.industrial += 1
+        elif (site_type == 'C'):
+            self.commercial += 1
+        elif (site_type == 'R'):
+            self.residential += 1
+
+        return 1
 
     def place_all(self):
 
@@ -133,9 +157,33 @@ class Map:
 
         """
 
-        for x in range(len(starting_map)):
-            for y in range(len(starting_map[x])):
-                print(starting_map[x][y])
+        for x in range(len(self.map)):
+            for y in range(len(self.map[x])):
+                site = ''
+
+                # Randomly pick a site type
+                rand = random.randint(0, 2)
+                if rand == 0:
+                    site = 'I'
+                elif rand == 1:
+                    site = 'C'
+                elif rand == 2:
+                    site = 'R'
+
+                # Keep trying until a site is placed
+                while not self.place_site(site, x, y):
+                    if (self.industrial == INDUSTRIAL_MAX and
+                            self.commercial == COMMERCIAL_MAX and
+                            self.residential == RESIDENTIAL_MAX):
+                        break
+
+                    rand = random.randint(0, 2)
+                    if rand == 0:
+                        site = 'I'
+                    elif rand == 1:
+                        site = 'C'
+                    elif rand == 2:
+                        site = 'R'
 
     def penalty(self):
 
@@ -192,6 +240,7 @@ class Map:
                 None
 
         """
+
 
 #####################
 # Script Start
