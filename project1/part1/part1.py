@@ -307,19 +307,6 @@ class N_QueenChess:
         print(self.h2())
 
 
-################################################
-# Nodes being tracked
-################################################
-
-class Node():
-
-    def __init__(self, columns, weights, parent=None, isleaf= False, cost=0):
-        self.columns = columns
-        self.weights = weights
-        self.isleaf = isleaf
-        self.parent = parent
-        self.cost = cost
-        self.children= []
 
 
 #####################
