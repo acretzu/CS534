@@ -323,6 +323,8 @@ class Hillclimbing:
         self.restart = 0
         self.restart_limit = restart_limit
         self.sideway_limit = sideway_limit
+        print("Start Game with " + heuristic)
+        print("----------------------------------------------")
 
     def restart_game(self, n_queen_board):
 
@@ -332,10 +334,16 @@ class Hillclimbing:
 
         if self.restart <= self.restart_limit:
 
-            n_queen_board.columns = [random.randint(0, (n_queen_board.size - 1)) for i in range(n_queen_board.size)]
+            print("Restart the Game with " + self.h)
+            print("----------------------------------------------")
 
-            # refresh sideway move quota
+            # refresh sideway move quota, cost
             self.sideway = 0
+            self.cost = 0
+
+            # refresh node and board
+            n_queen_board.columns = self.node[0].copy()
+            self.node = [n_queen_board.columns.copy()]
 
             # update the number of restarts
             self.restart += 1
@@ -466,7 +474,7 @@ for queen in starting_board:
 n_queen.test()
 
 hc_h1 = Hillclimbing(n_queen_board = n_queen, heuristic = "h1")
-hc_h2 = Hillclimbing(n_queen_board = n_queen, heuristic = "h2")
-
 hc_h1.expand(n_queen)
+
+hc_h2 = Hillclimbing(n_queen_board = n_queen, heuristic = "h2")
 hc_h2.expand(n_queen)
