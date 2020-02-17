@@ -306,7 +306,148 @@ class N_QueenChess:
         print("--------NQ.h2--------")
         print(self.h2())
 
+################################################
+# Hill Climbing Algorithm
+################################################
 
+class Hillclimbing:
+
+    def __init__(self, n_queen_board, heuristic, restart_limit=5, sideway_limit=5):
+
+        self.h = heuristic
+        self.cost = 0
+        self.sideway = 0
+        self.node = [n_queen_board.columns.copy()]
+        self.restart = 0
+        self.restart_limit = restart_limit
+        self.sideway_limit = sideway_limit
+
+    def restart_game(self, n_queen_board):
+
+        """
+        if get stuck on local optimal, restart the game
+        """
+
+        if self.restart <= self.restart_limit:
+
+            n_queen_board.columns = [random.randint(0, (n_queen_board.size - 1)) for i in range(n_queen_board.size)]
+
+            # refresh sideway move quota
+            self.sideway = 0
+
+            # update the number of restarts
+            self.restart += 1
+
+            # keep expanding
+            return self.expand(n_queen_board)
+
+        else:
+
+            print("Run out of the restarts limits")
+
+    def expand(self, n_queen_board):
+
+        '''
+         Expand the current tree node.
+         Add one child node for each possible next move in the game.
+         Inputs:
+                node: the current tree node to be expanded
+         Outputs:
+                c.children: a list of children nodes.
+        '''
+
+        def simulated_annealing(current_h1, next_h1, T=10):
+
+            if T ** (current_h1 - next_h1) > 0.5:
+                return True
+            else:
+                return False
+
+        def play_rule(h_board, h_self):
+
+            """
+            Given the heuristic for all potential moves and current state, play the next move
+            """
+            h_min = h_board.min()
+
+            # Sideway occurs and we can make sideways moves within limits
+            if (h_min == h_self) and (self.sideway <= self.sideway_limit):
+
+                # get the column number of the queen and move to which row
+                choice = np.where(h_board == h_min)
+                rd = random.randint(1, len(choice[0]))
+                queen_to_move = choice[1][rd - 1]
+                move_to_where = choice[0][rd - 1]
+
+                # update data the cost
+                self.cost += n_queen_board.cost(queen_to_move, move_to_where)
+
+                # move the queen
+                n_queen_board.play(queen_to_move, move_to_where)
+
+                # add the node
+                self.node.append(n_queen_board.columns)
+
+                # update the number of sideway moves
+                self.sideway += 1
+
+                # show board
+                n_queen_board.display()
+
+                # keep expanding
+                return self.expand(n_queen_board)
+
+            elif (h_min < h_self) or simulated_annealing(h_min, h_self):
+
+                # get the column number of the queen and move to which row
+                choice = np.where(h_board == h_min)
+                rd = random.randint(1, len(choice[0]))
+                queen_to_move = choice[1][rd - 1]
+                move_to_where = choice[0][rd - 1]
+
+                # update data the cost
+                self.cost += n_queen_board.cost(queen_to_move, move_to_where)
+
+                # move the queen
+                n_queen_board.play(queen_to_move, move_to_where)
+
+                # add the node
+                self.node.append(n_queen_board.columns.copy())
+
+                # show board
+                n_queen_board.display()
+
+                # keep expanding
+                return self.expand(n_queen_board)
+
+            # else here means that
+            # either we run out of the sideways move
+            # or we reach the local optimal but not global optimal
+            else:
+
+                # we have to restart queens' position
+                return self.restart_game(n_queen_board)
+
+        """
+        start to play
+        """
+        # check if game is over
+        if n_queen_board.attacks() == 0:
+            print("Game over")
+
+        # if game is not over, check which heuristic is used to play game
+
+        # is heuristic 1?
+        elif self.h == "h1":
+
+            h1_board, h1_self = n_queen_board.h1()
+            play_rule(h1_board, h1_self)
+
+        # is heuristic 2?
+        elif self.h == "h2":
+
+            h2_board, h2_self = n_queen_board.h2()
+            play_rule(h2_board, h2_self)
 
 
 #####################
