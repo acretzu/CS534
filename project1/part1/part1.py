@@ -78,9 +78,14 @@ def parse_csv_file():
 ################################################
 class N_QueenChess():
 
-    def __init__(self, columns, weights):
-        self.columns = columns
-        self.weights = weights
+    def __init__(self, starting_board):
+
+        starting_board.sort(key=lambda x: x[1])
+
+        self.columns = [(i[0]-1) for i in starting_board]
+        self.weights = [i[2] for i in starting_board]
+
+        self.size = len(self.weights)
 
     #     def start_game(self):
     #         self.columns = [random.randint(0, (self.size - 1)) for i in range(self.size)]
@@ -117,14 +122,14 @@ class N_QueenChess():
         return cost
 
     # acretzu - Commenting out due to errors. Please fix!
-    # def display(self):
-    #     for column in range(self.size):
-    #         for row in range(self.size):
-    #             if column == self.columns[row]:
-    #                 print('Q', end=' ')
-    #             else:
-    #                 print('.', end=' ')
-    #         print()
+    def display(self):
+        for column in range(self.size):
+            for row in range(self.size):
+                if column == self.columns[row]:
+                    print(self.weights[row], end=' ')
+                else:
+                    print('.', end=' ')
+            print()
 
     def h1(self):
 
@@ -150,11 +155,11 @@ class N_QueenChess():
                     attack_queen_list.add(queen_column)
                     attack_queen_list.add(compare_column)
 
-                elif self.columns[queen_column] - queen_column == compare_column - self.columns[compare_column]:
+                elif self.columns[queen_column] - self.columns[compare_column] == compare_column - queen_column:
                     attack_queen_list.add(queen_column)
                     attack_queen_list.add(compare_column)
 
-        h1 = min([self.weight[i] for i in attack_queen_list]) ** 2
+        h1 = min([self.weights[i] for i in attack_queen_list]) ** 2
 
         return h1
 
@@ -179,14 +184,14 @@ class N_QueenChess():
                 elif queen_column - self.columns[queen_column] == compare_column - self.columns[compare_column]:
                     attack_queen_pair_list.add((queen_column, compare_column))
 
-                elif self.columns[queen_column] - queen_column == compare_column - self.columns[compare_column]:
+                elif self.columns[queen_column] - self.columns[compare_column] == compare_column - queen_column:
                     attack_queen_pair_list.add((queen_column, compare_column))
 
-        h2 = sum([min(self.weight[i], self.weight[j]) ** 2 for i, j in attack_queen_pair_list])
+        h2 = sum([min(self.weights[i], self.weights[j]) ** 2 for i, j in attack_queen_pair_list])
 
         return h2
 
-    def check(self):
+    def attacks(self):
         '''
             check if the game has ended.
             Input:
@@ -206,10 +211,27 @@ class N_QueenChess():
                 elif queen_column - self.columns[queen_column] == compare_column - self.columns[compare_column]:
                     n_attack = n_attack + 1
 
-                elif self.columns[queen_column] - queen_column == compare_column - self.columns[compare_column]:
+                elif self.columns[queen_column] - self.columns[compare_column] == compare_column - queen_column:
                     n_attack = n_attack + 1
 
         return n_attack
+
+
+    def test(self):
+        print("--------columns--------")
+        print(self.columns)
+        print("--------weight--------")
+        print(self.weights)
+        print("--------size--------")
+        print(self.size)
+        print("--------display--------")
+        self.display()
+        print("--------h1--------")
+        print(self.h1())
+        print("--------h2--------")
+        print(self.h2())
+        print("--------attacks--------")
+        print(self.attacks())
 
 ################################################
 # Nodes being tracked
@@ -232,6 +254,9 @@ class Node():
 
 __options__ = parse_cmd_line_options()
 starting_board = parse_csv_file()
+n_queen = N_QueenChess(starting_board)
 
 for queen in starting_board:
     print("Queen weight = %d, Queen row = %d, Queen col = %d" % (queen[0], queen[1], queen[2]))
+
+n_queen.test()
