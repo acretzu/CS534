@@ -3,9 +3,11 @@
 import os
 import sys
 import re
+from itertools import product
 from optparse import OptionParser
 import math
 import random
+import numpy as np
 
 __options__ = None
 starting_map = []
@@ -95,6 +97,8 @@ class Map:
 
     def __init__(self, starting_map):
         self.map = starting_map
+        self.height = len(starting_map)
+        self.width = len(starting_map[0])
         self.score = 0
         self.industrial = 0
         self.commercial = 0
@@ -124,18 +128,24 @@ class Map:
             return 0
 
         # Checks if the square is invalid
-        if self.map[x][y] == 'X':
-            return 1
+        if self.map[y][x] == 'X':
+            return 0
+        elif self.map[y][x] == 'I':
+            return 0
+        elif self.map[y][x] == 'C':
+            return 0
+        elif self.map[y][x] == 'R':
+            return 0
 
         # Compute cost and add
-        if self.map[x][y] == 'S':
+        if self.map[y][x] == 'S':
             cost = 1
         else:
-            cost = int(self.map[x][y]) + 2
-        self.score += cost
+            cost = int(self.map[y][x]) + 2
+        self.score -= cost
 
         # Place the site
-        self.map[x][y] = site_type
+        self.map[y][x] = site_type
 
         # Increment
         if (site_type == 'I'):
@@ -152,61 +162,205 @@ class Map:
         """
             Places all sites on random places on the map
 
-            Input:
-                None
-
         """
 
-        for x in range(len(self.map)):
-            for y in range(len(self.map[x])):
-                site = ''
+        cells = list(range(0, (self.width * self.height) - 1))
 
-                # Randomly pick a site type
-                rand = random.randint(0, 2)
-                if rand == 0:
-                    site = 'I'
-                elif rand == 1:
-                    site = 'C'
-                elif rand == 2:
-                    site = 'R'
+        site = ''
 
-                # Keep trying until a site is placed
-                while not self.place_site(site, x, y):
-                    if (self.industrial == INDUSTRIAL_MAX and
-                            self.commercial == COMMERCIAL_MAX and
-                            self.residential == RESIDENTIAL_MAX):
-                        break
+        # Fill the map
+        while True:
 
-                    rand = random.randint(0, 2)
-                    if rand == 0:
-                        site = 'I'
-                    elif rand == 1:
-                        site = 'C'
-                    elif rand == 2:
-                        site = 'R'
+            # Break when max is reached
+            if (self.industrial == INDUSTRIAL_MAX and
+                    self.commercial == COMMERCIAL_MAX and
+                    self.residential == RESIDENTIAL_MAX):
+                break
 
-    def penalty(self):
+            # Randomly pick a spot on the map
+            cell = random.choice(cells)
+            x = cell % self.width
+            y = math.floor(cell / self.width)
+
+            # Randomly pick a site type
+            rand = random.randint(0, 2)
+            if rand == 0:
+                site = 'I'
+            elif rand == 1:
+                site = 'C'
+            elif rand == 2:
+                site = 'R'
+
+            # Try to place the site
+            if self.place_site(site, x, y):
+                cells.remove(cell)
+
+    def toxic_penalty(self):
 
         """
-            Calculate total penalty of the map
-
-            Input:
-                None
+            Calculate penalty of toxic sites
 
             Output:
                 penalty: int
 
         """
 
-    def score(self):
+        penalty = 0
+
+        for y in range(self.height):
+            for x in range(self.width):
+                if self.map[y][x] == 'X':
+
+                    # Get neighbors
+                    neighbors = self.neighbors(x, y, 2)
+
+                    for s in neighbors:
+
+                        # Industrial penalty
+                        if s == 'I':
+                            penalty += 10
+                        # Commercial penalty
+                        elif s == 'C':
+                            penalty += 20
+                        # Residential penalty
+                        elif s == 'R':
+                            penalty += 20
+
+        return penalty
+
+    def scenic_bonus(self):
 
         """
-            Update total score of the map
+            Calculate bonus of scenic sites
 
-            Input:
-                None
+            Output:
+                bonus: int
 
         """
+
+        bonus = 0
+
+        for y in range(self.height):
+            for x in range(self.width):
+                if self.map[y][x] == 'S':
+
+                    # Get neighbors
+                    neighbors = self.neighbors(x, y, 2)
+
+                    for s in neighbors:
+
+                        # Residential bonus
+                        if s == 'R':
+                            bonus += 10
+
+        return bonus
+
+    def industrial_bonus(self):
+
+        """
+            Calculate bonus for industrial neighbors
+
+            Output:
+                bonus: int
+
+        """
+
+        bonus = 0
+
+        for y in range(self.height):
+            for x in range(self.width):
+                if self.map[y][x] == 'I':
+
+                    # Get neighbors
+                    neighbors = self.neighbors(x, y, 2)
+
+                    for s in neighbors:
+
+                        # Industrial bonus
+                        if s == 'I':
+                            bonus += 2
+
+        return bonus
+
+    def commercial_bonus(self):
+
+        """
+            Calculate bonus for commercial sites
+
+            Output:
+                bonus: int
+
+        """
+
+        bonus = 0
+
+        for y in range(self.height):
+            for x in range(self.width):
+                if self.map[y][x] == 'C':
+
+                    # Get neighbors
+                    neighbors = self.neighbors(x, y, 3)
+
+                    for s in neighbors:
+
+                        # Residential bonus
+                        if s == 'R':
+                            bonus += 4
+
+                    neighbors = self.neighbors(x, y, 2)
+
+                    for s in neighbors:
+
+                        # Commercial penalty
+                        if s == 'C':
+                            bonus -= 4
+
+        return bonus
+
+    def residential_bonus(self):
+
+        """
+            Calculate bonus for residential sites
+
+            Output:
+                bonus: int
+
+        """
+
+        bonus = 0
+
+        for y in range(self.height):
+            for x in range(self.width):
+                if self.map[y][x] == 'R':
+
+                    # Get neighbors
+                    neighbors = self.neighbors(x, y, 3)
+
+                    for s in neighbors:
+
+                        # Industrial penalty
+                        if s == 'I':
+                            bonus -= 5
+
+                        # Commercial bonus
+                        if s == 'C':
+                            bonus += 4
+
+        return bonus
+
+    def update_score(self):
+
+        """
+            Update total score of the map (bonus - penalty)
+
+        """
+        self.score = 0
+        self.score -= self.toxic_penalty()
+        self.score += self.scenic_bonus()
+        self.score += self.industrial_bonus()
+        self.score += self.commercial_bonus()
+        self.score += self.residential_bonus()
+        return self.score
 
     def crossover(self, partner_map):
 
@@ -224,22 +378,49 @@ class Map:
     def mutate(self):
 
         """
-            Make a random swap of two sites on the map
+            Make a random swap of one or two sites on the map
 
             Input:
                 None
 
         """
+
+    def neighbors(self, x, y, distance):
+
+        """
+            Return neighbors in Manhattan distance away from x,y cell
+
+            Input:
+                x: x-coordinate of cell
+                y: y-coordinate of cell
+
+            Output:
+                list of neighbors within distance of the cell
+
+        """
+
+        neighbors = []
+
+        for i in range(-distance, distance + 1):
+            for j in range(-distance, distance + 1):
+                if (abs(j) + abs(i) <= distance and
+                        x-j >= 0 and
+                        y-i >= 0 and
+                        x-j < self.width and
+                        y-i < self.height and
+                        not (j == 0 and i == 0)):
+                    neighbors.append(self.map[y-i][x-j])
+
+        return neighbors
 
     def print(self):
 
         """
             Print the map in block format
 
-            Input:
-                None
-
         """
+
+        print(self.map)
 
 
 #####################
@@ -255,4 +436,21 @@ COMMERCIAL_MAX = loc_maximums[1]
 RESIDENTIAL_MAX = loc_maximums[2]
 
 # Print the 2d map
-print(starting_map)
+print(INDUSTRIAL_MAX)
+print(COMMERCIAL_MAX)
+print(RESIDENTIAL_MAX)
+print(np.array(starting_map))
+
+maps = []
+scores = []
+
+for i in range(10):
+
+    m = Map(np.array(starting_map))
+    m.place_all()
+    score = m.update_score()
+
+    scores.append(score)
+    maps.append(m)
+
+print(scores)
