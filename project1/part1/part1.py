@@ -5,6 +5,8 @@ import sys
 import re
 from optparse import OptionParser
 import math
+import numpy as np
+import random
 
 
 #
@@ -462,3 +464,9 @@ for queen in starting_board:
     print("Queen weight = %d, Queen row = %d, Queen col = %d" % (queen[0], queen[1], queen[2]))
 
 n_queen.test()
+
+hc_h1 = Hillclimbing(n_queen_board = n_queen, heuristic = "h1")
+hc_h2 = Hillclimbing(n_queen_board = n_queen, heuristic = "h2")
+
+hc_h1.expand(n_queen)
+hc_h2.expand(n_queen)
