@@ -76,6 +76,16 @@ def parse_csv_file():
 
 
 ################################################
+# Make up a Board (N_QueenChess Game)
+################################################
+def makeup_board(board_size):
+    # [(row, col, weight)]
+
+    fake_board = [(random.randint(1, board_size), (i+1), random.randint(1, 9)) for i in range(board_size)]
+
+    return fake_board
+
+################################################
 # Board (N_QueenChess Game)
 ################################################
 class N_QueenChess:
