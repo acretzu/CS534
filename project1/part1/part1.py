@@ -466,15 +466,17 @@ class Hillclimbing:
 
 __options__ = parse_cmd_line_options()
 starting_board = parse_csv_file()
-n_queen = N_QueenChess(starting_board)
 
 for queen in starting_board:
     print("Queen weight = %d, Queen row = %d, Queen col = %d" % (queen[0], queen[1], queen[2]))
 
+
+n_queen = N_QueenChess(starting_board)
 n_queen.test()
 
 hc_h1 = Hillclimbing(n_queen_board = n_queen, heuristic = "h1")
 hc_h1.expand(n_queen)
 
+n_queen = N_QueenChess(starting_board)
 hc_h2 = Hillclimbing(n_queen_board = n_queen, heuristic = "h2")
 hc_h2.expand(n_queen)
