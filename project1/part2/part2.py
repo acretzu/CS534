@@ -441,16 +441,35 @@ class Map:
 
         return new_map
 
-    def mutate(self):
+    def mutate_swap(self):
 
         """
-            Make a random swap of one or two sites on the map
+            Make a random swap of two sites on the map
 
         """
 
         cells = list(range(0, (self.width * self.height) - 1))
 
+        site1 = -1
+        site2 = -1
+
         while True:
+
+            if site1 >= 0 and site2 >= 0:
+                # Calculate x and y
+                x1 = site1 % self.width
+                y1 = math.floor(site1 / self.width)
+                x2 = site2 % self.width
+                y2 = math.floor(site2 / self.width)
+
+                # Swap
+                place_holder = self.map[y1][x1]
+                self.map[y1][x1] = self.map[y2][x2]
+                self.map[y2][x2] = place_holder
+                break
+
+            if len(cells) == 0:
+                break
 
             # Randomly pick a spot on the map
             cell = random.choice(cells)
@@ -458,33 +477,97 @@ class Map:
             y = math.floor(cell / self.width)
 
             if self.map[y][x] == 'I':
+                if site1 == -1:
+                    site1 = cell
+                elif site2 == -1:
+                    site2 = cell
 
-                # Set the cell back to starting value
+            elif self.map[y][x] == 'C':
+                if site1 == -1:
+                    site1 = cell
+                elif site2 == -1:
+                    site2 = cell
+
+            elif self.map[y][x] == 'R':
+                if site1 == -1:
+                    site1 = cell
+                elif site2 == -1:
+                    site2 = cell
+
+            cells.remove(cell)
+
+    def mutate_spot_removal(self):
+
+        """
+            Remove a random site
+
+        """
+
+        cells = list(range(0, (self.width * self.height) - 1))
+
+        while True:
+
+            if len(cells) == 0:
+                break
+
+            # Randomly pick a spot on the map
+            cell = random.choice(cells)
+            x = cell % self.width
+            y = math.floor(cell / self.width)
+
+            if self.map[y][x] == 'I':
                 self.map[y][x] = self.starting_map[y][x]
                 self.industrial -= 1
-
-                # Replace the site
-                self.place_all()
                 break
 
             elif self.map[y][x] == 'C':
-
-                # Set the cell back to starting value
                 self.map[y][x] = self.starting_map[y][x]
                 self.commercial -= 1
-
-                # Replace the site
-                self.place_all()
                 break
 
             elif self.map[y][x] == 'R':
-
-                # Set the cell back to starting value
                 self.map[y][x] = self.starting_map[y][x]
                 self.residential -= 1
+                break
 
-                # Replace the site
-                self.place_all()
+            cells.remove(cell)
+
+    def mutate_spot_addition(self):
+
+        """
+            Add a random site
+
+        """
+
+        cells = list(range(0, (self.width * self.height) - 1))
+
+        while True:
+
+            if len(cells) == 0:
+                break
+
+            site = ''
+
+            # Randomly pick a site type
+            while site == '':
+                rand = random.randint(0, 2)
+                if rand == 0 and self.industrial < INDUSTRIAL_MAX:
+                    site = 'I'
+                elif rand == 1 and self.commercial < COMMERCIAL_MAX:
+                    site = 'C'
+                elif rand == 2 and self.industrial < RESIDENTIAL_MAX:
+                    site = 'R'
+                elif (self.industrial == INDUSTRIAL_MAX and
+                      self.commercial == COMMERCIAL_MAX and
+                      self.industrial == RESIDENTIAL_MAX):
+                    return
+
+            # Randomly pick a spot on the map
+            cell = random.choice(cells)
+            x = cell % self.width
+            y = math.floor(cell / self.width)
+
+            if self.place_site(site, x, y) == 1:
                 break
 
             cells.remove(cell)
@@ -589,6 +672,7 @@ if __options__.algorithm == 'GA':
     init_map.print_fancy()
     print("\n")
 
+
     # Helper function
     def get_score(map):
         return map.score
@@ -596,9 +680,9 @@ if __options__.algorithm == 'GA':
 
     # Population pool
     pool_size = 100  # this has to be even
-    elite_percent = 5  # percent
-    generations = 200
-    mutation_chance = 3  # percent
+    elite_percent = 50  # percent
+    generations = 1000
+    mutation_chance = 50  # percent
     map_pool = []
     parents = []
     new_map_pool = []
@@ -636,7 +720,7 @@ if __options__.algorithm == 'GA':
             m.score = accumulated_score
 
         # Breed
-        while len(new_map_pool) < math.ceil(pool_size - (pool_size*elite_percent/100)):
+        while len(new_map_pool) < math.ceil(pool_size - (pool_size * elite_percent / 100)):
 
             # Randomly choose two maps to breed
             i1 = random.uniform(0, 1)
@@ -667,14 +751,23 @@ if __options__.algorithm == 'GA':
             parents.clear()
 
         # Elitism
-        for i in range(math.ceil(pool_size - pool_size*elite_percent/100), pool_size):
+        for i in range(math.ceil(pool_size - pool_size * elite_percent / 100), pool_size):
             new_map_pool.append(map_pool[i])
 
         # Mutation
         for j in range(len(new_map_pool) - math.ceil(pool_size * elite_percent / 100)):
+            mutation_type = random.randint(0, 3)
             mutate = random.uniform(0, 100 / mutation_chance)
             if mutate < 1:
-                new_map_pool[j].mutate()
+                if mutation_type == 0:
+                    new_map_pool[j].mutate_spot_removal()
+                elif mutation_type == 1:
+                    new_map_pool[j].mutate_spot_addition()
+                elif mutation_type == 2:
+                    new_map_pool[j].mutate_swap()
+                elif mutation_type == 3:
+                    new_map_pool[j].mutate_spot_removal()
+                    new_map_pool[j].mutate_spot_addition()
 
         # Clear population
         map_pool.clear()
@@ -691,6 +784,8 @@ if __options__.algorithm == 'GA':
         if time.time() - start_time > 10:
             break
 
+        print(map_pool[pool_size - 1].score)
+
     scores = []
     for m in map_pool:
         m.update_score()
@@ -700,7 +795,7 @@ if __options__.algorithm == 'GA':
     print("Best Score: \n", map_pool[pool_size - 1].score, "\n")
     print("Best Map:")
     map_pool[pool_size - 1].print_fancy()
-    print("Total Time: ", time.time()-start_time)
+    print("Total Time: ", time.time() - start_time)
 
 
 elif __options__.algorithm == 'HC':
