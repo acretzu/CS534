@@ -23,7 +23,7 @@ RESIDENTIAL_MAX = 0
 #
 def parse_cmd_line_options():
     parser = OptionParser()
-    parser.add_option("--f", action="store", type="string", dest="csv", default="urban_3.txt",
+    parser.add_option("--f", action="store", type="string", dest="csv", default="urban_1.txt",
                       help="The local path to the CSV file.")
     parser.add_option("--e", action="store", type="string", dest="algorithm", default="GA", help="The algorithm.")
 
@@ -404,10 +404,11 @@ class Map:
 
         while True:
 
-            # Max is reached
-            if (new_map.industrial == INDUSTRIAL_MAX and
-                    new_map.commercial == COMMERCIAL_MAX and
-                    new_map.residential == RESIDENTIAL_MAX):
+            sites_count = new_map.industrial + new_map.commercial + new_map.residential
+
+            # Number of sites in child is equal to number of sites in parent with less sites
+            if (sites_count == self.industrial + self.commercial + self.residential or
+                    sites_count == partner_map.industrial + partner_map.commercial + partner_map.residential):
                 break
 
             # Check if all cells have been checked
@@ -435,9 +436,6 @@ class Map:
                 new_map.place_site('R', x, y)
 
             cells.remove(cell)
-
-        # Randomly place rest
-        new_map.place_all()
 
         return new_map
 
@@ -680,9 +678,9 @@ if __options__.algorithm == 'GA':
 
     # Population pool
     pool_size = 100  # this has to be even
-    elite_percent = 50  # percent
-    generations = 1000
-    mutation_chance = 50  # percent
+    elite_percent = 5  # percent
+    generations = 100
+    mutation_chance = 3  # percent
     map_pool = []
     parents = []
     new_map_pool = []
@@ -743,6 +741,10 @@ if __options__.algorithm == 'GA':
 
             # Crossover and add child to new generation
             child = parents[0].crossover(parents[1])
+            #parents[0].print_fancy()
+            #parents[1].print_fancy()
+            #child.print_fancy()
+            #print("--")
 
             # Add child to new population
             new_map_pool.append(child)
@@ -784,7 +786,7 @@ if __options__.algorithm == 'GA':
         if time.time() - start_time > 10:
             break
 
-        print(map_pool[pool_size - 1].score)
+        #print(map_pool[pool_size - 1].score)
 
     scores = []
     for m in map_pool:
