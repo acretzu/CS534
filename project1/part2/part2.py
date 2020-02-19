@@ -594,11 +594,11 @@ if __options__.algorithm == 'GA':
         return map.score
 
 
-    # Population pool urban_3
+    # Population pool
     pool_size = 100  # this has to be even
     elite_percent = 5  # percent
-    generations = 50
-    mutation_chance = 1  # percent
+    generations = 200
+    mutation_chance = 3  # percent
     map_pool = []
     parents = []
     new_map_pool = []
@@ -688,7 +688,8 @@ if __options__.algorithm == 'GA':
         for m in map_pool:
             m.update_score()
 
-        #print(map_pool[pool_size - 1].score)
+        if time.time() - start_time > 10:
+            break
 
     scores = []
     for m in map_pool:
