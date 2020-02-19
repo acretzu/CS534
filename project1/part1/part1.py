@@ -5,6 +5,8 @@ import sys
 import re
 from optparse import OptionParser
 import math
+import numpy as np
+import random
 
 
 #
@@ -74,17 +76,28 @@ def parse_csv_file():
 
 
 ################################################
+# Make up a Board (N_QueenChess Game)
+################################################
+def makeup_board(board_size):
+    # [(row, col, weight)]
+
+    fake_board = [(random.randint(1, board_size), (i+1), random.randint(1, 9)) for i in range(board_size)]
+
+    return fake_board
+
+################################################
 # Board (N_QueenChess Game)
 ################################################
-class N_QueenChess():
+class N_QueenChess:
 
-    def __init__(self, columns, weights):
-        self.columns = columns
-        self.weights = weights
+    def __init__(self, starting_board):
+        starting_board.sort(key=lambda x: x[1])
 
-    #     def start_game(self):
-    #         self.columns = [random.randint(0, (self.size - 1)) for i in range(self.size)]
-    #         self.weights = [random.randint(1, 9) for i in range(self.size)]
+        # get columns, weights, size from csv
+        # columns[0] represent which row the first column queen is at
+        self.columns = [(i[0] - 1) for i in starting_board]
+        self.weights = [i[2] for i in starting_board]
+        self.size = len(self.weights)
 
     def play(self, queen_to_move, move_to_where):
 
@@ -92,18 +105,25 @@ class N_QueenChess():
             Play next move
 
             Input:
+                self
                 queen_to_move: the column number (which queen to move)
                 move_to_where: move to which row
 
         """
+        # can't move to the original places (which means didn't move)
+        assert self.columns[queen_to_move] != move_to_where
+        # to make sure row is not out of the board
+        assert move_to_where < self.size
+
         self.columns[queen_to_move] = move_to_where
 
     def cost(self, queen_to_move, move_to_where):
 
         """
-            Calculate the cost of one move
+            Calculate the cost of one pontential move
 
             Input:
+                self
                 queen_to_move: the column number (which queen to move)
                 move_to_where: move to which row
 
@@ -112,118 +132,342 @@ class N_QueenChess():
 
         """
 
-        cost = self.weights[queen_to_move] * (self.columns[queen_to_move] - move_to_where)
+        cost = self.weights[queen_to_move] * ((self.columns[queen_to_move] - move_to_where) ** 2)
 
         return cost
 
-    # acretzu - Commenting out due to errors. Please fix!
-    # def display(self):
-    #     for column in range(self.size):
-    #         for row in range(self.size):
-    #             if column == self.columns[row]:
-    #                 print('Q', end=' ')
-    #             else:
-    #                 print('.', end=' ')
-    #         print()
+    def display(self):
+
+        """
+        Display the chess board
+        """
+
+        for column in range(self.size):
+            for row in range(self.size):
+                if column == self.columns[row]:
+                    print(self.weights[row], end=' ')
+                else:
+                    print('.', end=' ')
+            print()
+        print("---------------------------------")
 
     def h1(self):
 
         """
-            check heuristics 1
+            Check Heuristics 1
+                    The lightest Queen across all pairs of Queens attacking each other.
+                    Moving that Queen is the minimum possible cost to solve the problem
             Input:
-                s: the current state of the game
+                self:
 
             Outputs:
-                h1: The lightest Queen across all pairs of Queens attacking each other.
-                    Moving that Queen is the minimum possible cost to solve the problem
+                h1_board: h1 for each pontential move, displayed as a board
+                h1_current: h1 for current board
         """
 
-        attack_queen_list = set()
+        def calculate_h1(columns, weights, size):
 
-        for queen_column in range(self.size):
-            for compare_column in range(queen_column + 1, self.size):
-                if self.columns[queen_column] == self.columns[compare_column]:
-                    attack_queen_list.add(queen_column)
-                    attack_queen_list.add(compare_column)
+            attack_queen_list = set()
 
-                elif queen_column - self.columns[queen_column] == compare_column - self.columns[compare_column]:
-                    attack_queen_list.add(queen_column)
-                    attack_queen_list.add(compare_column)
+            for queen_column in range(size):
+                for compare_column in range(queen_column + 1, size):
 
-                elif self.columns[queen_column] - queen_column == compare_column - self.columns[compare_column]:
-                    attack_queen_list.add(queen_column)
-                    attack_queen_list.add(compare_column)
+                    # check if on the same row
+                    if columns[queen_column] == columns[compare_column]:
+                        attack_queen_list.add(queen_column)
+                        attack_queen_list.add(compare_column)
 
-        h1 = min([self.weight[i] for i in attack_queen_list]) ** 2
+                    # check if on the one of diagonals
+                    elif queen_column - columns[queen_column] == compare_column - columns[compare_column]:
+                        attack_queen_list.add(queen_column)
+                        attack_queen_list.add(compare_column)
 
-        return h1
+                    # check if on the another diagonal
+                    elif queen_column + columns[queen_column] == compare_column + columns[compare_column]:
+                        attack_queen_list.add(queen_column)
+                        attack_queen_list.add(compare_column)
+
+            try:
+                h1_self = min([weights[i] for i in attack_queen_list]) ** 2
+            except:
+                # there is no attacking queen pairs
+                h1_self = 0
+
+            return h1_self
+
+        # --------------------------------------------------
+        # h1 for each pontential move, displayed as a board
+        h1_board = np.zeros((self.size, self.size))
+
+        for i in range(self.size):
+            for j in range(self.size):
+                if self.columns[j] != i:
+                    next_move = self.columns.copy()
+                    next_move[j] = i
+                    h1_board[i, j] = calculate_h1(next_move, self.weights, self.size)
+
+                else:
+                    # let's assume the current h1 is infinte, then we can get the min of neighbours
+                    h1_board[i, j] = float("inf")
+
+        return h1_board, calculate_h1(self.columns, self.weights, self.size)
 
     def h2(self):
 
         """
-            check heuristics 2
+            Check Heuristics 2
+                    Sum across every pair of attacking Queens the weight of the lightest Queen.
             Input:
-                s: the current state of the game
+                self:
 
             Outputs:
-                h2: Sum across every pair of attacking Queens the weight of the lightest Queen.
+                h2_board: h1 for each pontential move, displayed as a board
+                h2_current: h1 for current board
         """
 
-        attack_queen_pair_list = set()
+        def calculate_h2(columns, weights, size):
 
-        for queen_column in range(self.size):
-            for compare_column in range(queen_column + 1, self.size):
-                if self.columns[queen_column] == self.columns[compare_column]:
-                    attack_queen_pair_list.add((queen_column, compare_column))
+            attack_queen_pair_list = set()
 
-                elif queen_column - self.columns[queen_column] == compare_column - self.columns[compare_column]:
-                    attack_queen_pair_list.add((queen_column, compare_column))
+            for queen_column in range(size):
+                for compare_column in range(queen_column + 1, size):
 
-                elif self.columns[queen_column] - queen_column == compare_column - self.columns[compare_column]:
-                    attack_queen_pair_list.add((queen_column, compare_column))
+                    # check if on the same row
+                    if columns[queen_column] == columns[compare_column]:
+                        attack_queen_pair_list.add((queen_column, compare_column))
 
-        h2 = sum([min(self.weight[i], self.weight[j]) ** 2 for i, j in attack_queen_pair_list])
+                    # check if on the one of diagonals
+                    elif queen_column - columns[queen_column] == compare_column - columns[compare_column]:
+                        attack_queen_pair_list.add((queen_column, compare_column))
 
-        return h2
+                    # check if on the another diagonal
+                    elif queen_column + columns[queen_column] == compare_column + columns[compare_column]:
+                        attack_queen_pair_list.add((queen_column, compare_column))
+            try:
+                h2_self = sum([min(weights[i], weights[j]) ** 2 for i, j in attack_queen_pair_list])
 
-    def check(self):
+            except:
+                # there is no attacking queen pairs
+                h2_self = 0
+
+            return h2_self
+
+        # --------------------------------------------------
+        # h2 for each pontential move, displayed as a board
+        h2_board = np.zeros((self.size, self.size))
+
+        for i in range(self.size):
+            for j in range(self.size):
+                if self.columns[j] != i:
+                    next_move = self.columns.copy()
+                    next_move[j] = i
+                    h2_board[i, j] = calculate_h2(next_move, self.weights, self.size)
+
+                else:
+                    # let's assume the current h2 is infinte, then we can get the min of neighbours
+                    h2_board[i, j] = float("inf")
+
+        return h2_board, calculate_h2(self.columns, self.weights, self.size)
+
+    def attacks(self):
         '''
             check if the game has ended.
             Input:
-                s: the current state of the game
+                self:
 
             Outputs:
                 n_attack: the result (numbers of pairs of attacking Queen)
-
         '''
+
         n_attack = 0
 
         for queen_column in range(self.size):
             for compare_column in range(queen_column + 1, self.size):
+
+                # check if on the same row
                 if self.columns[queen_column] == self.columns[compare_column]:
                     n_attack = n_attack + 1
 
+                # check if on the one of diagonals
                 elif queen_column - self.columns[queen_column] == compare_column - self.columns[compare_column]:
                     n_attack = n_attack + 1
 
-                elif self.columns[queen_column] - queen_column == compare_column - self.columns[compare_column]:
+                # check if on the another diagonal
+                elif queen_column + self.columns[queen_column] == compare_column + self.columns[compare_column]:
                     n_attack = n_attack + 1
 
         return n_attack
 
+    def test(self):
+        """
+        check if all the functions in the class working
+        """
+
+        print("--------NQ.columns--------")
+        print(self.columns)
+        print("--------NQ.weight--------")
+        print(self.weights)
+        print("--------NQ.size--------")
+        print(self.size)
+        print("--------NQ.attacks--------")
+        print(self.attacks())
+        print("--------NQ.display--------")
+        self.display()
+        print("--------NQ.h1--------")
+        print(self.h1())
+        print("--------NQ.h2--------")
+        print(self.h2())
+
 ################################################
-# Nodes being tracked
+# Hill Climbing Algorithm
 ################################################
 
-class Node():
+class Hillclimbing:
 
-    def __init__(self, columns, weights, parent=None, isleaf= False, cost=0):
-        self.columns = columns
-        self.weights = weights
-        self.isleaf = isleaf
-        self.parent = parent
-        self.cost = cost
-        self.children= []
+    def __init__(self, n_queen_board, heuristic, restart_limit=5, sideway_limit=5):
+
+        self.h = heuristic
+        self.cost = 0
+        self.sideway = 0
+        self.node = [n_queen_board.columns.copy()]
+        self.restart = 0
+        self.restart_limit = restart_limit
+        self.sideway_limit = sideway_limit
+        print("Start Game with " + heuristic)
+        print("----------------------------------------------")
+
+    def restart_game(self, n_queen_board):
+
+        """
+        if get stuck on local optimal, restart the game
+        """
+
+        if self.restart <= self.restart_limit:
+
+            print("Restart the Game with " + self.h)
+            print("----------------------------------------------")
+
+            # refresh sideway move quota, cost
+            self.sideway = 0
+            self.cost = 0
+
+            # refresh node and board
+            n_queen_board.columns = self.node[0].copy()
+            self.node = [n_queen_board.columns.copy()]
+
+            # update the number of restarts
+            self.restart += 1
+
+            # keep expanding
+            return self.expand(n_queen_board)
+
+        else:
+
+            print("Run out of the restarts limits")
+
+    def expand(self, n_queen_board):
+
+        '''
+         Expand the current tree node.
+         Add one child node for each possible next move in the game.
+         Inputs:
+                node: the current tree node to be expanded
+         Outputs:
+                c.children: a list of children nodes.
+        '''
+
+        def simulated_annealing(current_h1, next_h1, T=10):
+
+            if T ** (current_h1 - next_h1) > 0.5:
+                return True
+            else:
+                return False
+
+        def play_rule(h_board, h_self):
+
+            """
+            Given the heuristic for all potential moves and current state, play the next move
+            """
+            h_min = h_board.min()
+
+            # Sideway occurs and we can make sideways moves within limits
+            if (h_min == h_self) and (self.sideway <= self.sideway_limit):
+
+                # get the column number of the queen and move to which row
+                choice = np.where(h_board == h_min)
+                rd = random.randint(1, len(choice[0]))
+                queen_to_move = choice[1][rd - 1]
+                move_to_where = choice[0][rd - 1]
+
+                # update data the cost
+                self.cost += n_queen_board.cost(queen_to_move, move_to_where)
+
+                # move the queen
+                n_queen_board.play(queen_to_move, move_to_where)
+
+                # add the node
+                self.node.append(n_queen_board.columns)
+
+                # update the number of sideway moves
+                self.sideway += 1
+
+                # show board
+                n_queen_board.display()
+
+                # keep expanding
+                return self.expand(n_queen_board)
+
+            elif (h_min < h_self) or simulated_annealing(h_min, h_self):
+
+                # get the column number of the queen and move to which row
+                choice = np.where(h_board == h_min)
+                rd = random.randint(1, len(choice[0]))
+                queen_to_move = choice[1][rd - 1]
+                move_to_where = choice[0][rd - 1]
+
+                # update data the cost
+                self.cost += n_queen_board.cost(queen_to_move, move_to_where)
+
+                # move the queen
+                n_queen_board.play(queen_to_move, move_to_where)
+
+                # add the node
+                self.node.append(n_queen_board.columns.copy())
+
+                # show board
+                n_queen_board.display()
+
+                # keep expanding
+                return self.expand(n_queen_board)
+
+            # else here means that
+            # either we run out of the sideways move
+            # or we reach the local optimal but not global optimal
+            else:
+
+                # we have to restart queens' position
+                return self.restart_game(n_queen_board)
+
+        """
+        start to play
+        """
+        # check if game is over
+        if n_queen_board.attacks() == 0:
+            print("Game over")
+
+        # if game is not over, check which heuristic is used to play game
+
+        # is heuristic 1?
+        elif self.h == "h1":
+
+            h1_board, h1_self = n_queen_board.h1()
+            play_rule(h1_board, h1_self)
+
+        # is heuristic 2?
+        elif self.h == "h2":
+
+            h2_board, h2_self = n_queen_board.h2()
+            play_rule(h2_board, h2_self)
 
 
 #####################
@@ -235,3 +479,14 @@ starting_board = parse_csv_file()
 
 for queen in starting_board:
     print("Queen weight = %d, Queen row = %d, Queen col = %d" % (queen[0], queen[1], queen[2]))
+
+
+n_queen = N_QueenChess(starting_board)
+n_queen.test()
+
+hc_h1 = Hillclimbing(n_queen_board = n_queen, heuristic = "h1")
+hc_h1.expand(n_queen)
+
+n_queen = N_QueenChess(starting_board)
+hc_h2 = Hillclimbing(n_queen_board = n_queen, heuristic = "h2")
+hc_h2.expand(n_queen)
