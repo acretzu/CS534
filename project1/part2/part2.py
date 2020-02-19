@@ -8,6 +8,7 @@ from optparse import OptionParser
 import math
 import random
 import numpy as np
+import time
 
 __options__ = None
 starting_map = []
@@ -22,7 +23,7 @@ RESIDENTIAL_MAX = 0
 #
 def parse_cmd_line_options():
     parser = OptionParser()
-    parser.add_option("--f", action="store", type="string", dest="csv", default="urban_2.txt",
+    parser.add_option("--f", action="store", type="string", dest="csv", default="urban_3.txt",
                       help="The local path to the CSV file.")
     parser.add_option("--e", action="store", type="string", dest="algorithm", default="GA", help="The algorithm.")
 
@@ -456,49 +457,37 @@ class Map:
             x = cell % self.width
             y = math.floor(cell / self.width)
 
-            if (self.map[y][x] == 'I' or
-                    self.map[y][x] == 'C' or
-                    self.map[y][x] == 'R'):
+            if self.map[y][x] == 'I':
 
-                # It was scenic cell
-                if self.starting_map[y][x] == 'S':
-                    self.score += 1
+                # Set the cell back to starting value
+                self.map[y][x] = self.starting_map[y][x]
+                self.industrial -= 1
 
-                # It was number cell
-                else:
-                    self.score += int(self.starting_map[y][x]) + 2
+                # Replace the site
+                self.place_all()
+                break
 
-                if self.map[y][x] == 'I':
+            elif self.map[y][x] == 'C':
 
-                    # Set the cell back to starting value
-                    self.map[y][x] = self.starting_map[y][x]
-                    self.industrial -= 1
+                # Set the cell back to starting value
+                self.map[y][x] = self.starting_map[y][x]
+                self.commercial -= 1
 
-                    # Replace the site
-                    self.place_all()
-                    break
+                # Replace the site
+                self.place_all()
+                break
 
-                elif self.map[y][x] == 'C':
+            elif self.map[y][x] == 'R':
 
-                    # Set the cell back to starting value
-                    self.map[y][x] = self.starting_map[y][x]
-                    self.commercial -= 1
+                # Set the cell back to starting value
+                self.map[y][x] = self.starting_map[y][x]
+                self.residential -= 1
 
-                    # Replace the site
-                    self.place_all()
-                    break
+                # Replace the site
+                self.place_all()
+                break
 
-                elif self.map[y][x] == 'R':
-
-                    # Set the cell back to starting value
-                    self.map[y][x] = self.starting_map[y][x]
-                    self.residential -= 1
-
-                    # Replace the site
-                    self.place_all()
-                    break
-            else:
-                cells.remove(cell)
+            cells.remove(cell)
 
     def neighbors(self, x, y, distance):
 
@@ -587,6 +576,10 @@ COMMERCIAL_MAX = loc_maximums[1]
 RESIDENTIAL_MAX = loc_maximums[2]
 
 if __options__.algorithm == 'GA':
+
+    # Start a timer
+    start_time = time.time()
+
     # Print the 2d map
     print("Industrial Max: ", INDUSTRIAL_MAX)
     print("Commercial Max: ", COMMERCIAL_MAX)
@@ -601,10 +594,10 @@ if __options__.algorithm == 'GA':
         return map.score
 
 
-    # Population pool
+    # Population pool urban_3
     pool_size = 100  # this has to be even
-    elite_percent = 10  # percent
-    generations = 100
+    elite_percent = 5  # percent
+    generations = 50
     mutation_chance = 1  # percent
     map_pool = []
     parents = []
@@ -642,14 +635,9 @@ if __options__.algorithm == 'GA':
             accumulated_score += m.score
             m.score = accumulated_score
 
-        # Chance of mutation
-        for j in range(len(map_pool)-math.ceil(pool_size*elite_percent/100)):
-            mutate = random.uniform(0, 100 / mutation_chance)
-            if mutate < 1:
-                map_pool[j].mutate()
-
         # Breed
         while len(new_map_pool) < math.ceil(pool_size - (pool_size*elite_percent/100)):
+
             # Randomly choose two maps to breed
             i1 = random.uniform(0, 1)
             i2 = random.uniform(0, 1)
@@ -663,15 +651,14 @@ if __options__.algorithm == 'GA':
                     parents.append(m)
                     break
 
-            i3 = random.randint(0, len(map_pool)-1)
-            i4 = random.randint(0, len(map_pool)-1)
             if score_total == 0:
+                i3 = random.randint(0, len(map_pool) - 1)
+                i4 = random.randint(0, len(map_pool) - 1)
                 parents.append(map_pool[i3])
                 parents.append(map_pool[i4])
 
             # Crossover and add child to new generation
             child = parents[0].crossover(parents[1])
-            child.update_score()
 
             # Add child to new population
             new_map_pool.append(child)
@@ -682,6 +669,12 @@ if __options__.algorithm == 'GA':
         # Elitism
         for i in range(math.ceil(pool_size - pool_size*elite_percent/100), pool_size):
             new_map_pool.append(map_pool[i])
+
+        # Mutation
+        for j in range(len(new_map_pool) - math.ceil(pool_size * elite_percent / 100)):
+            mutate = random.uniform(0, 100 / mutation_chance)
+            if mutate < 1:
+                new_map_pool[j].mutate()
 
         # Clear population
         map_pool.clear()
@@ -695,7 +688,7 @@ if __options__.algorithm == 'GA':
         for m in map_pool:
             m.update_score()
 
-        print("Top: ", map_pool[pool_size - 1].score)
+        #print(map_pool[pool_size - 1].score)
 
     scores = []
     for m in map_pool:
@@ -706,6 +699,8 @@ if __options__.algorithm == 'GA':
     print("Best Score: \n", map_pool[pool_size - 1].score, "\n")
     print("Best Map:")
     map_pool[pool_size - 1].print_fancy()
+    print("Total Time: ", time.time()-start_time)
+
 
 elif __options__.algorithm == 'HC':
     print("implement HC here")
