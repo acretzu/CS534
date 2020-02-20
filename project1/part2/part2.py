@@ -8,6 +8,7 @@ from optparse import OptionParser
 import math
 import random
 import numpy as np
+import time
 
 __options__ = None
 starting_map = []
@@ -22,9 +23,9 @@ RESIDENTIAL_MAX = 0
 #
 def parse_cmd_line_options():
     parser = OptionParser()
-    parser.add_option("--f", action="store", type="string", dest="csv", default="urban_2.txt",
+    parser.add_option("--f", action="store", type="string", dest="csv", default="urban_1.txt",
                       help="The local path to the CSV file.")
-    parser.add_option("--e", action="store", type="string", dest="algorithm", default="HC", help="The algorithm.")
+    parser.add_option("--e", action="store", type="string", dest="algorithm", default="GA", help="The algorithm.")
 
     (options, args) = parser.parse_args()
 
@@ -58,7 +59,7 @@ def parse_csv_file_map():
         csv_info[-1] = csv_info[-1].strip()
 
         # Add the line to the return array
-        if (len(csv_info) > 1):
+        if len(csv_info) > 1:
             ret_array.append(csv_info)
 
     return ret_array
@@ -96,7 +97,8 @@ def parse_csv_file_maximums():
 class Map:
 
     def __init__(self, starting_map):
-        self.map = starting_map
+        self.map = np.array(starting_map)
+        self.starting_map = np.array(starting_map)
         self.height = len(starting_map)
         self.width = len(starting_map[0])
         self.score = 0
@@ -104,55 +106,49 @@ class Map:
         self.commercial = 0
         self.residential = 0
 
-    def place_site(self, site_type, x, y):
+    def place_site(self, site, x, y):
 
         """
             Checks if sites have reached maximum
-            Checks if the square is valid
+            Checks if the cell is taken
             Adds cost of placing
+            Increments total site count
             Places site
 
             Input:
-                site_type: the type of site to place on the map (0, 1, 2)
+                site: the type of site to place on the map
                 x: x-coordinate
                 y: y-coordinate
 
         """
 
-        # Checks if sites have reached maximum
-        if (site_type == 'I' and self.industrial == INDUSTRIAL_MAX):
-            return 0
-        if (site_type == 'C' and self.commercial == COMMERCIAL_MAX):
-            return 0
-        if (site_type == 'R' and self.residential == RESIDENTIAL_MAX):
-            return 0
-
-        # Checks if the square is invalid
+        # Checks if the cell is taken
         if self.map[y][x] == 'X':
-            return 0
+            return -5
         elif self.map[y][x] == 'I':
-            return 0
+            return -4
         elif self.map[y][x] == 'C':
-            return 0
+            return -3
         elif self.map[y][x] == 'R':
-            return 0
+            return -2
 
-        # Compute cost and add
-        if self.map[y][x] == 'S':
-            cost = 1
-        else:
-            cost = int(self.map[y][x]) + 2
-        self.score -= cost
+        # Checks if sites have reached maximum
+        if site == 'I' and self.industrial == INDUSTRIAL_MAX:
+            return 0
+        if site == 'C' and self.commercial == COMMERCIAL_MAX:
+            return 0
+        if site == 'R' and self.residential == RESIDENTIAL_MAX:
+            return 0
 
         # Place the site
-        self.map[y][x] = site_type
+        self.map[y][x] = site
 
         # Increment
-        if (site_type == 'I'):
+        if site == 'I':
             self.industrial += 1
-        elif (site_type == 'C'):
+        elif site == 'C':
             self.commercial += 1
-        elif (site_type == 'R'):
+        elif site == 'R':
             self.residential += 1
 
         return 1
@@ -171,7 +167,7 @@ class Map:
         # Fill the map
         while True:
 
-            # Break when max is reached
+            # Max is reached
             if (self.industrial == INDUSTRIAL_MAX and
                     self.commercial == COMMERCIAL_MAX and
                     self.residential == RESIDENTIAL_MAX):
@@ -348,6 +344,32 @@ class Map:
 
         return bonus
 
+    def build_cost(self):
+
+        """
+            Calculate cost for building
+
+            Output:
+                cost: int
+
+        """
+
+        cost = 0
+
+        for y in range(self.height):
+            for x in range(self.width):
+
+                if (self.map[y][x] == 'I' or
+                        self.map[y][x] == 'C' or
+                        self.map[y][x] == 'R'):
+
+                    if self.starting_map[y][x] == 'S':
+                        cost += 1
+                    else:
+                        cost += int(self.starting_map[y][x])
+
+        return cost
+
     def update_score(self):
 
         """
@@ -355,6 +377,7 @@ class Map:
 
         """
         self.score = 0
+        self.score -= self.build_cost()
         self.score -= self.toxic_penalty()
         self.score += self.scenic_bonus()
         self.score += self.industrial_bonus()
@@ -371,19 +394,181 @@ class Map:
                 partner_map: another map to crossover with
 
             Output:
-                map: new 2d array representing a new map
+                map: new child map
 
         """
 
-    def mutate(self):
+        new_map = Map(np.array(self.starting_map))
+
+        cells = list(range(0, (self.width * self.height) - 1))
+
+        while True:
+
+            sites_count = new_map.industrial + new_map.commercial + new_map.residential
+
+            # Number of sites in child is equal to number of sites in parent with less sites
+            if (sites_count == self.industrial + self.commercial + self.residential or
+                    sites_count == partner_map.industrial + partner_map.commercial + partner_map.residential):
+                break
+
+            # Check if all cells have been checked
+            if len(cells) == 0:
+                break
+
+            # Randomly pick a spot on the map
+            cell = random.choice(cells)
+            x = cell % self.width
+            y = math.floor(cell / self.width)
+
+            if new_map.industrial < INDUSTRIAL_MAX and (self.map[y][x] == 'I' or partner_map.map[y][x] == 'I'):
+
+                # Place an industrial site on the same cell in new map
+                new_map.place_site('I', x, y)
+
+            elif new_map.commercial < COMMERCIAL_MAX and (self.map[y][x] == 'C' or partner_map.map[y][x] == 'C'):
+
+                # Place an industrial site on the same cell in new map
+                new_map.place_site('C', x, y)
+
+            elif new_map.residential < RESIDENTIAL_MAX and (self.map[y][x] == 'R' or partner_map.map[y][x] == 'R'):
+
+                # Place an industrial site on the same cell in new map
+                new_map.place_site('R', x, y)
+
+            cells.remove(cell)
+
+        return new_map
+
+    def mutate_swap(self):
 
         """
-            Make a random swap of one or two sites on the map
-
-            Input:
-                None
+            Make a random swap of two sites on the map
 
         """
+
+        cells = list(range(0, (self.width * self.height) - 1))
+
+        site1 = -1
+        site2 = -1
+
+        while True:
+
+            if site1 >= 0 and site2 >= 0:
+                # Calculate x and y
+                x1 = site1 % self.width
+                y1 = math.floor(site1 / self.width)
+                x2 = site2 % self.width
+                y2 = math.floor(site2 / self.width)
+
+                # Swap
+                place_holder = self.map[y1][x1]
+                self.map[y1][x1] = self.map[y2][x2]
+                self.map[y2][x2] = place_holder
+                break
+
+            if len(cells) == 0:
+                break
+
+            # Randomly pick a spot on the map
+            cell = random.choice(cells)
+            x = cell % self.width
+            y = math.floor(cell / self.width)
+
+            if self.map[y][x] == 'I':
+                if site1 == -1:
+                    site1 = cell
+                elif site2 == -1:
+                    site2 = cell
+
+            elif self.map[y][x] == 'C':
+                if site1 == -1:
+                    site1 = cell
+                elif site2 == -1:
+                    site2 = cell
+
+            elif self.map[y][x] == 'R':
+                if site1 == -1:
+                    site1 = cell
+                elif site2 == -1:
+                    site2 = cell
+
+            cells.remove(cell)
+
+    def mutate_spot_removal(self):
+
+        """
+            Remove a random site
+
+        """
+
+        cells = list(range(0, (self.width * self.height) - 1))
+
+        while True:
+
+            if len(cells) == 0:
+                break
+
+            # Randomly pick a spot on the map
+            cell = random.choice(cells)
+            x = cell % self.width
+            y = math.floor(cell / self.width)
+
+            if self.map[y][x] == 'I':
+                self.map[y][x] = self.starting_map[y][x]
+                self.industrial -= 1
+                break
+
+            elif self.map[y][x] == 'C':
+                self.map[y][x] = self.starting_map[y][x]
+                self.commercial -= 1
+                break
+
+            elif self.map[y][x] == 'R':
+                self.map[y][x] = self.starting_map[y][x]
+                self.residential -= 1
+                break
+
+            cells.remove(cell)
+
+    def mutate_spot_addition(self):
+
+        """
+            Add a random site
+
+        """
+
+        cells = list(range(0, (self.width * self.height) - 1))
+
+        while True:
+
+            if len(cells) == 0:
+                break
+
+            site = ''
+
+            # Randomly pick a site type
+            while site == '':
+                rand = random.randint(0, 2)
+                if rand == 0 and self.industrial < INDUSTRIAL_MAX:
+                    site = 'I'
+                elif rand == 1 and self.commercial < COMMERCIAL_MAX:
+                    site = 'C'
+                elif rand == 2 and self.industrial < RESIDENTIAL_MAX:
+                    site = 'R'
+                elif (self.industrial == INDUSTRIAL_MAX and
+                      self.commercial == COMMERCIAL_MAX and
+                      self.industrial == RESIDENTIAL_MAX):
+                    return
+
+            # Randomly pick a spot on the map
+            cell = random.choice(cells)
+            x = cell % self.width
+            y = math.floor(cell / self.width)
+
+            if self.place_site(site, x, y) == 1:
+                break
+
+            cells.remove(cell)
 
     def neighbors(self, x, y, distance):
 
@@ -404,14 +589,50 @@ class Map:
         for i in range(-distance, distance + 1):
             for j in range(-distance, distance + 1):
                 if (abs(j) + abs(i) <= distance and
-                        x-j >= 0 and
-                        y-i >= 0 and
-                        x-j < self.width and
-                        y-i < self.height and
+                        x - j >= 0 and
+                        y - i >= 0 and
+                        x - j < self.width and
+                        y - i < self.height and
                         not (j == 0 and i == 0)):
-                    neighbors.append(self.map[y-i][x-j])
+                    neighbors.append(self.map[y - i][x - j])
 
         return neighbors
+
+    def copy_map(self, other_map):
+
+        """
+            Return a new copy of the given map
+
+        """
+
+        new_map = np.array(other_map)
+        return new_map
+
+    def print_fancy(self):
+
+        """
+            Print the map so only sites are present
+
+        """
+
+        output = np.array(self.map)
+
+        for y in range(self.height):
+            for x in range(self.width):
+                if self.map[y][x] == 'X':
+                    output[y][x] = 'X'
+                elif self.map[y][x] == 'S':
+                    output[y][x] = 'S'
+                elif self.map[y][x] == 'I':
+                    output[y][x] = 'I'
+                elif self.map[y][x] == 'C':
+                    output[y][x] = 'C'
+                elif self.map[y][x] == 'R':
+                    output[y][x] = 'R'
+                else:
+                    output[y][x] = ' '
+
+        print(output)
 
     def print(self):
 
@@ -435,22 +656,149 @@ INDUSTRIAL_MAX = loc_maximums[0]
 COMMERCIAL_MAX = loc_maximums[1]
 RESIDENTIAL_MAX = loc_maximums[2]
 
-# Print the 2d map
-print(INDUSTRIAL_MAX)
-print(COMMERCIAL_MAX)
-print(RESIDENTIAL_MAX)
-print(np.array(starting_map))
+if __options__.algorithm == 'GA':
 
-maps = []
-scores = []
+    # Start a timer
+    start_time = time.time()
 
-for i in range(10):
+    # Print the 2d map
+    print("Industrial Max: ", INDUSTRIAL_MAX)
+    print("Commercial Max: ", COMMERCIAL_MAX)
+    print("Residential Max: ", RESIDENTIAL_MAX)
+    print("Starting Map:\n", np.array(starting_map), "\n")
+    init_map = Map(starting_map)
+    init_map.print_fancy()
+    print("\n")
 
-    m = Map(np.array(starting_map))
-    m.place_all()
-    score = m.update_score()
 
-    scores.append(score)
-    maps.append(m)
+    # Helper function
+    def get_score(map):
+        return map.score
 
-print(scores)
+
+    # Population pool
+    pool_size = 100  # this has to be even
+    elite_percent = 5  # percent
+    generations = 100
+    mutation_chance = 3  # percent
+    map_pool = []
+    parents = []
+    new_map_pool = []
+
+    # Initial population
+    for i in range(pool_size):
+        m1 = Map(np.array(starting_map))
+        m1.place_all()
+        score = m1.update_score()
+        map_pool.append(m1)
+
+    for generation in range(generations):
+
+        # Sort the pool
+        map_pool.sort(key=get_score)
+
+        # Shift onto 0
+        offset = map_pool[0].score
+        for i in range(pool_size):
+            map_pool[i].score -= offset
+
+        # Normalize
+        score_total = 0
+        for m in map_pool:
+            score_total += m.score
+
+        if score_total != 0:
+            for m in map_pool:
+                m.score = m.score / score_total
+
+        # Accumulated scores
+        accumulated_score = 0
+        for m in map_pool:
+            accumulated_score += m.score
+            m.score = accumulated_score
+
+        # Breed
+        while len(new_map_pool) < math.ceil(pool_size - (pool_size * elite_percent / 100)):
+
+            # Randomly choose two maps to breed
+            i1 = random.uniform(0, 1)
+            i2 = random.uniform(0, 1)
+
+            for m in map_pool:
+                if m.score >= i1:
+                    parents.append(m)
+                    break
+            for m in map_pool:
+                if m.score >= i2:
+                    parents.append(m)
+                    break
+
+            if score_total == 0:
+                i3 = random.randint(0, len(map_pool) - 1)
+                i4 = random.randint(0, len(map_pool) - 1)
+                parents.append(map_pool[i3])
+                parents.append(map_pool[i4])
+
+            # Crossover and add child to new generation
+            child = parents[0].crossover(parents[1])
+            #parents[0].print_fancy()
+            #parents[1].print_fancy()
+            #child.print_fancy()
+            #print("--")
+
+            # Add child to new population
+            new_map_pool.append(child)
+
+            # Clear parents array
+            parents.clear()
+
+        # Elitism
+        for i in range(math.ceil(pool_size - pool_size * elite_percent / 100), pool_size):
+            new_map_pool.append(map_pool[i])
+
+        # Mutation
+        for j in range(len(new_map_pool) - math.ceil(pool_size * elite_percent / 100)):
+            mutation_type = random.randint(0, 3)
+            mutate = random.uniform(0, 100 / mutation_chance)
+            if mutate < 1:
+                if mutation_type == 0:
+                    new_map_pool[j].mutate_spot_removal()
+                elif mutation_type == 1:
+                    new_map_pool[j].mutate_spot_addition()
+                elif mutation_type == 2:
+                    new_map_pool[j].mutate_swap()
+                elif mutation_type == 3:
+                    new_map_pool[j].mutate_spot_removal()
+                    new_map_pool[j].mutate_spot_addition()
+
+        # Clear population
+        map_pool.clear()
+
+        # New population becomes the current
+        map_pool = new_map_pool.copy()
+
+        # Reset new population for later use
+        new_map_pool.clear()
+
+        for m in map_pool:
+            m.update_score()
+
+        if time.time() - start_time > 10:
+            break
+
+        #print(map_pool[pool_size - 1].score)
+
+    scores = []
+    for m in map_pool:
+        m.update_score()
+        scores.append(m.score)
+    print("Last Generation Scores: \n", scores, "\n")
+    map_pool[pool_size - 1].update_score()
+    print("Best Score: \n", map_pool[pool_size - 1].score, "\n")
+    print("Best Map:")
+    map_pool[pool_size - 1].print_fancy()
+    print("Total Time: ", time.time() - start_time)
+
+
+elif __options__.algorithm == 'HC':
+    print("implement HC here")
