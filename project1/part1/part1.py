@@ -7,6 +7,9 @@ from optparse import OptionParser
 import math
 import numpy as np
 import random
+import time
+import sys
+
 
 
 #
@@ -324,17 +327,35 @@ class N_QueenChess:
 
 class Hillclimbing:
 
-    def __init__(self, n_queen_board, heuristic, restart_limit=5, sideway_limit=5):
+    def __init__(self, n_queen_board, heuristic, time_limit=0.1, sideway_limit=3):
 
         self.h = heuristic
-        self.cost = 0
+        self.total_cost = 0
         self.sideway = 0
         self.node = [n_queen_board.columns.copy()]
-        self.restart = 0
-        self.restart_limit = restart_limit
+        # self.restart = 0
+        self.time_limit = time_limit
         self.sideway_limit = sideway_limit
+        self.start_time = time.time()
+        # # minset just to prove that h2 is not admissble
+        # self.minset = []
+
         print("Start Game with " + heuristic)
         print("----------------------------------------------")
+
+        print("Start board state")
+
+        """
+        Just for visualization for the whole process
+        """
+        # show board, h, total_cost
+        n_queen_board.display()
+        print("-----------h1------------")
+        print(n_queen_board.h1())
+        print("-----------h2------------")
+        print(n_queen_board.h2())
+        print("-----------cost so far------------")
+        print(self.total_cost)
 
     def restart_game(self, n_queen_board):
 
@@ -342,28 +363,30 @@ class Hillclimbing:
         if get stuck on local optimal, restart the game
         """
 
-        if self.restart <= self.restart_limit:
+        # if self.restart <= self.restart_limit:
 
-            print("Restart the Game with " + self.h)
-            print("----------------------------------------------")
+        print("Restart the Game with " + self.h)
+        print("----------------------------------------------")
 
-            # refresh sideway move quota, cost
-            self.sideway = 0
-            self.cost = 0
+        self.start_time = time.time()
 
-            # refresh node and board
-            n_queen_board.columns = self.node[0].copy()
-            self.node = [n_queen_board.columns.copy()]
+        # refresh sideway move quota, cost
+        self.sideway = 0
+        self.total_cost = 0
 
-            # update the number of restarts
-            self.restart += 1
+        # refresh node and board
+        n_queen_board.columns = self.node[0].copy()
+        self.node = [n_queen_board.columns.copy()]
 
-            # keep expanding
-            return self.expand(n_queen_board)
+        # update the number of restarts
+        # self.restart += 1
 
-        else:
+        # keep expanding
+        return self.expand(n_queen_board)
 
-            print("Run out of the restarts limits")
+        # else:
+        #
+        #     print("Run out of the restarts limits")
 
     def expand(self, n_queen_board):
 
@@ -376,9 +399,9 @@ class Hillclimbing:
                 c.children: a list of children nodes.
         '''
 
-        def simulated_annealing(current_h1, next_h1, T=10):
+        def simulated_annealing(current_h, next_h, T=10):
 
-            if T ** (current_h1 - next_h1) > 0.5:
+            if T ** (current_h - next_h) > 0.5:
                 return True
             else:
                 return False
@@ -389,9 +412,10 @@ class Hillclimbing:
             Given the heuristic for all potential moves and current state, play the next move
             """
             h_min = h_board.min()
+            # self.minset.append(h_min)
 
             # Sideway occurs and we can make sideways moves within limits
-            if (h_min == h_self) and (self.sideway <= self.sideway_limit):
+            if (h_min == h_self) and (self.sideway <= self.sideway_limit) and ((time.time()-self.start_time) <= self.time_limit):
 
                 # get the column number of the queen and move to which row
                 choice = np.where(h_board == h_min)
@@ -400,7 +424,7 @@ class Hillclimbing:
                 move_to_where = choice[0][rd - 1]
 
                 # update data the cost
-                self.cost += n_queen_board.cost(queen_to_move, move_to_where)
+                self.total_cost += n_queen_board.cost(queen_to_move, move_to_where)
 
                 # move the queen
                 n_queen_board.play(queen_to_move, move_to_where)
@@ -411,13 +435,24 @@ class Hillclimbing:
                 # update the number of sideway moves
                 self.sideway += 1
 
-                # show board
+
+                """
+                Just for visualization for the whole process
+                """
+                # show board, h, total_cost
                 n_queen_board.display()
+                print("-----------h1------------")
+                print(n_queen_board.h1())
+                print("-----------h2------------")
+                print(n_queen_board.h2())
+                print("-----------cost so far------------")
+                print(self.total_cost)
 
                 # keep expanding
                 return self.expand(n_queen_board)
 
-            elif (h_min < h_self) or simulated_annealing(h_min, h_self):
+            # elif (h_min < h_self) or simulated_annealing(h_min, h_self):
+            elif (h_min < h_self) and ((time.time()-self.start_time) <= self.time_limit):
 
                 # get the column number of the queen and move to which row
                 choice = np.where(h_board == h_min)
@@ -426,7 +461,7 @@ class Hillclimbing:
                 move_to_where = choice[0][rd - 1]
 
                 # update data the cost
-                self.cost += n_queen_board.cost(queen_to_move, move_to_where)
+                self.total_cost += n_queen_board.cost(queen_to_move, move_to_where)
 
                 # move the queen
                 n_queen_board.play(queen_to_move, move_to_where)
@@ -434,8 +469,18 @@ class Hillclimbing:
                 # add the node
                 self.node.append(n_queen_board.columns.copy())
 
-                # show board
+
+                """
+                Just for visualization for the whole process
+                """
+                # show board, h, cost
                 n_queen_board.display()
+                print("-----------h1------------")
+                print(n_queen_board.h1())
+                print("-----------h2------------")
+                print(n_queen_board.h2())
+                print("-----------cost so far------------")
+                print(self.total_cost)
 
                 # keep expanding
                 return self.expand(n_queen_board)
@@ -454,6 +499,7 @@ class Hillclimbing:
         # check if game is over
         if n_queen_board.attacks() == 0:
             print("Game over")
+            print(self.minset)
 
         # if game is not over, check which heuristic is used to play game
 
@@ -474,19 +520,27 @@ class Hillclimbing:
 # Script Start
 #####################
 
+# sys.setrecursionlimit(10000)
+
 __options__ = parse_cmd_line_options()
 starting_board = parse_csv_file()
+# starting_board = makeup_board(5)
+
 
 for queen in starting_board:
     print("Queen weight = %d, Queen row = %d, Queen col = %d" % (queen[0], queen[1], queen[2]))
 
 
+# n_queen = N_QueenChess(starting_board)
+# n_queen.test()
+# hc_h1 = Hillclimbing(n_queen_board = n_queen, heuristic = "h1")
+# hc_h1.expand(n_queen)
+
+
 n_queen = N_QueenChess(starting_board)
 n_queen.test()
-
-hc_h1 = Hillclimbing(n_queen_board = n_queen, heuristic = "h1")
-hc_h1.expand(n_queen)
-
-n_queen = N_QueenChess(starting_board)
 hc_h2 = Hillclimbing(n_queen_board = n_queen, heuristic = "h2")
 hc_h2.expand(n_queen)
+
+
+
