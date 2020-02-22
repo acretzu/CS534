@@ -728,11 +728,11 @@ n_queen = N_QueenChess(starting_board)
 # # n_queen.test()
 # #
 
-if __optoins__.algorithm == 1:
+if __options__.algorithm == 1:
     a_star = A_Star(n_queen, heuristic = __options__.heuristic)
     a_star.expand()
     a_star.results()
-else
+else:
     hc = Hillclimbing(n_queen_board = n_queen, heuristic = __options__.heuristic)
     hc.expand(n_queen)
     hc.display_result()
