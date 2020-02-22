@@ -9,6 +9,7 @@ import numpy as np
 import random
 import time
 import sys
+import copy
 
 
 
@@ -98,6 +99,7 @@ class N_QueenChess:
 
         # get columns, weights, size from csv
         # columns[0] represent which row the first column queen is at
+        self.start_columns = [(i[0] - 1) for i in starting_board]
         self.columns = [(i[0] - 1) for i in starting_board]
         self.weights = [i[2] for i in starting_board]
         self.size = len(self.weights)
@@ -216,18 +218,17 @@ class N_QueenChess:
         
 
         # --------------------------------------------------
-        # h1 for each pontential move, displayed as a board
+        # h1 for each potential move, displayed as a board
         h1_board = np.zeros((self.size, self.size))
 
         for i in range(self.size):
             for j in range(self.size):
                 if self.columns[j] != i:
-                    next_move = self.columns.copy()
-                    next_move[j] = i                                    
-                    h1_board[i, j] = self.calculate_h1(next_move, self.weights, self.size)                    
-
+                    next_move = copy.deepcopy(self.columns)
+                    next_move[j] = i                
+                    h1_board[i, j] = self.calculate_h1(next_move, self.weights, self.size)
                 else:
-                    # let's assume the current h1 is infinte, then we can get the min of neighbours
+                    # let's assume the current h1 is infinite, then we can get the min of neighbours
                     h1_board[i, j] = float("inf")
 
         return h1_board, self.calculate_h1(self.columns, self.weights, self.size)
@@ -280,7 +281,7 @@ class N_QueenChess:
         for i in range(self.size):
             for j in range(self.size):
                 if self.columns[j] != i:
-                    next_move = self.columns.copy()
+                    next_move = copy.deepcopy(self.columns)
                     next_move[j] = i
                     h2_board[i, j] = calculate_h2(next_move, self.weights, self.size)
 
@@ -351,13 +352,11 @@ class Hillclimbing:
         self.h = heuristic
         self.total_cost = 0
         self.sideway = 0
-        self.node = [n_queen_board.columns.copy()]
-        # self.restart = 0
+        self.node = [copy.deepcopy(n_queen_board.columns)]
         self.time_limit = time_limit
         self.sideway_limit = sideway_limit
+        self.total_start_time = time.time()
         self.start_time = time.time()
-        # # minset just to prove that h2 is not admissble
-        # self.minset = []
 
         print("Start Game with " + heuristic)
         print("----------------------------------------------")
@@ -369,12 +368,12 @@ class Hillclimbing:
         """
         # show board, h, total_cost
         n_queen_board.display()
-        print("-----------h1------------")
-        print(n_queen_board.h1())
-        print("-----------h2------------")
-        print(n_queen_board.h2())
-        print("-----------cost so far------------")
-        print(self.total_cost)
+        # print("-----------h1------------")
+        # print(n_queen_board.h1())
+        # print("-----------h2------------")
+        # print(n_queen_board.h2())
+        # print("-----------cost so far------------")
+        # print(self.total_cost)
 
     def restart_game(self, n_queen_board):
 
@@ -382,10 +381,8 @@ class Hillclimbing:
         if get stuck on local optimal, restart the game
         """
 
-        # if self.restart <= self.restart_limit:
-
-        print("Restart the Game with " + self.h)
-        print("----------------------------------------------")
+        # print("Restart the Game with " + self.h)
+        # print("----------------------------------------------")
 
         self.start_time = time.time()
 
@@ -394,40 +391,22 @@ class Hillclimbing:
         self.total_cost = 0
 
         # refresh node and board
-        n_queen_board.columns = self.node[0].copy()
-        self.node = [n_queen_board.columns.copy()]
-
-        # update the number of restarts
-        # self.restart += 1
-
-        # keep expanding
-        return self.expand(n_queen_board)
-
-        # else:
-        #
-        #     print("Run out of the restarts limits")
+        n_queen_board.columns = copy.deepcopy(self.node[0])
+        self.node = [copy.deepcopy(n_queen_board.columns)]
 
     def expand(self, n_queen_board):
 
         '''
-         Expand the current tree node.
-         Add one child node for each possible next move in the game.
-         Inputs:
+            Expand the current tree node.
+            Add one child node for each possible next move in the game.
+            Inputs:
                 node: the current tree node to be expanded
-         Outputs:
+            Outputs:
                 c.children: a list of children nodes.
         '''
 
-        def simulated_annealing(current_h, next_h, T=10):
-
-            if T ** (current_h - next_h) > 0.5:
-                return True
-            else:
-                return False
-
         def play_rule(h_board, h_self):
 
-            print("play_rule start")
             """
             Given the heuristic for all potential moves and current state, play the next move
             """
@@ -460,18 +439,14 @@ class Hillclimbing:
                 Just for visualization for the whole process
                 """
                 # show board, h, total_cost
-                n_queen_board.display()
-                print("-----------h1------------")
-                print(n_queen_board.h1())
-                print("-----------h2------------")
-                print(n_queen_board.h2())
-                print("-----------cost so far------------")
-                print(self.total_cost)
+                # n_queen_board.display()
+                # print("-----------h1------------")
+                # print(n_queen_board.h1())
+                # print("-----------h2------------")
+                # print(n_queen_board.h2())
+                # print("-----------cost so far------------")
+                # print(self.total_cost)
 
-                # keep expanding
-                return self.expand(n_queen_board)
-
-            # elif (h_min < h_self) or simulated_annealing(h_min, h_self):
             elif (h_min < h_self) and ((time.time()-self.start_time) <= self.time_limit):
 
                 # get the column number of the queen and move to which row
@@ -487,23 +462,22 @@ class Hillclimbing:
                 n_queen_board.play(queen_to_move, move_to_where)
 
                 # add the node
-                self.node.append(n_queen_board.columns.copy())
-
+                self.node.append(copy.deepcopy(n_queen_board.columns))
 
                 """
                 Just for visualization for the whole process
                 """
                 # show board, h, cost
-                n_queen_board.display()
-                print("-----------h1------------")
-                print(n_queen_board.h1())
-                print("-----------h2------------")
-                print(n_queen_board.h2())
-                print("-----------cost so far------------")
-                print(self.total_cost)
+                # n_queen_board.display()
+                # print("-----------h1------------")
+                # print(n_queen_board.h1())
+                # print("-----------h2------------")
+                # print(n_queen_board.h2())
+                # print("-----------cost so far------------")
+                # print(self.total_cost)
 
                 # keep expanding
-                return self.expand(n_queen_board)
+                # return self.expand(n_queen_board)
 
             # else here means that
             # either we run out of the sideways move
@@ -517,23 +491,28 @@ class Hillclimbing:
         start to play
         """
         # check if game is over
-        if n_queen_board.attacks() == 0:
-            print("Game over")
-            print(self.minset)
+        while n_queen_board.attacks() != 0:
 
-        # if game is not over, check which heuristic is used to play game
+            # if game is not over, check which heuristic is used to play game
 
-        # is heuristic 1?
-        elif self.h == "h1":
+            # is heuristic 1?
+            if self.h == "h1":
 
-            h1_board, h1_self = n_queen_board.h1()
-            play_rule(h1_board, h1_self)
+                h1_board, h1_self = n_queen_board.h1()
+                play_rule(h1_board, h1_self)
 
-        # is heuristic 2?
-        elif self.h == "h2":
+            # is heuristic 2?
+            elif self.h == "h2":
 
-            h2_board, h2_self = n_queen_board.h2()
-            play_rule(h2_board, h2_self)
+                h2_board, h2_self = n_queen_board.h2()
+                play_rule(h2_board, h2_self)
+
+    def display_result(self):
+        # print("The number of nodes expanded: %f" )  ==> waiting for TA response
+        print("It takes %f to finish the game" %(time.time() - self.total_start_time))
+        # print("The effective branching factor: ")  ===> waiting for TA response
+        print("The cost to solve the puzzle: %i" %self.total_cost())
+        # print("The sequence of moves needed to solve the puzzle:") ===> waiting for TA response
 
 
 ###############################################
@@ -725,19 +704,10 @@ class A_Star:
                         
                         #print("ns = ", neighbor_state_list, ", str = ", neighbor_state_str, "gx = ", next_gx, ", hx = ", next_hx, ", new_cost = ", new_cost)
 
-                        #if not self.frontier.contains(neighbor_state_str) and neighbor_state_str not :
-                        #    self.frontier.add(next_fx, neighbor_state_str)
-                        #    self.cost_so_far[neighbor_state_str] = next_fx
-                        #    self.came_from[neighbor_state_str] = current_state_str
                         if neighbor_state_str not in self.cost_so_far or new_cost < self.cost_so_far[neighbor_state_str]:
                             self.cost_so_far[neighbor_state_str] = new_cost                        
                             self.frontier.add(new_cost, neighbor_state_str)
-                            self.came_from[neighbor_state_str] = current_state_str
-                        
-            #print("LOOP")
-
-                    
-            
+                            self.came_from[neighbor_state_str] = current_state_str            
 
 
 #####################
@@ -751,27 +721,31 @@ starting_board = parse_csv_file()
 # starting_board = makeup_board(5)
 
 
-#for queen in starting_board:
-#    print("Queen weight = %d, Queen row = %d, Queen col = %d" % (queen[0], queen[1], queen[2]))
-
-
 
 
 n_queen = N_QueenChess(starting_board)
-#n_queen.display()
-#n_queen.test()
+# # n_queen.display()
+# # n_queen.test()
+# #
 
-#hc_h1 = Hillclimbing(n_queen_board = n_queen, heuristic = "h1")
-#hc_h1.expand(n_queen)
+if __optoins__.algorithm == 1:
+    a_star = A_Star(n_queen, heuristic = __options__.heuristic)
+    a_star.expand()
+    a_star.results()
+else
+    hc = Hillclimbing(n_queen_board = n_queen, heuristic = __options__.heuristic)
+    hc.expand(n_queen)
+    hc.display_result()
+    
+# hc_h1 = Hillclimbing(n_queen_board = n_queen, heuristic = "h1")
+# hc_h1.expand(n_queen)
+# hc_h1.display_result()
+# #
+# n_queen = N_QueenChess(starting_board)
+# hc_h2 = Hillclimbing(n_queen_board = n_queen, heuristic = "h2")
+# hc_h2.expand(n_queen)
+# hc_h2.display_result()
 
-#n_queen = N_QueenChess(starting_board)
-#hc_h2 = Hillclimbing(n_queen_board = n_queen, heuristic = "h2")
-#hc_h2.expand(n_queen)
 
 
 
-#n_queen.display()
-
-a_star = A_Star(n_queen, heuristic = __options__.heuristic)
-a_star.expand()
-a_star.results()
