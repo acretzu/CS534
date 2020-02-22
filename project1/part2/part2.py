@@ -9,6 +9,7 @@ import math
 import random
 import numpy as np
 import time
+import copy
 
 __options__ = None
 starting_map = []
@@ -23,9 +24,10 @@ RESIDENTIAL_MAX = 0
 #
 def parse_cmd_line_options():
     parser = OptionParser()
-    parser.add_option("--f", action="store", type="string", dest="csv", default="urban_1.txt",
+    parser.add_option("--f", action="store", type="string", dest="csv", default="urban_2.txt",
                       help="The local path to the CSV file.")
-    parser.add_option("--e", action="store", type="string", dest="algorithm", default="GA", help="The algorithm.")
+    # parser.add_option("--e", action="store", type="string", dest="algorithm", default="GA", help="The algorithm.")
+    parser.add_option("--e", action="store", type="string", dest="algorithm", default="HC", help="The algorithm.")
 
     (options, args) = parser.parse_args()
 
@@ -643,6 +645,245 @@ class Map:
 
         print(self.map)
 
+    def remove(self, x, y):
+
+        """
+            Remove a zone from the map
+        """
+
+        if self.map[y][x] == 'I':
+            self.map[y][x] = self.starting_map[y][x]
+            self.industrial -= 1
+
+        elif self.map[y][x] == 'C':
+            self.map[y][x] = self.starting_map[y][x]
+            self.commercial -= 1
+
+        elif self.map[y][x] == 'R':
+            self.map[y][x] = self.starting_map[y][x]
+            self.residential -= 1
+
+        else:
+            print("You can't remove %s" % self.map[y][x])
+
+
+    def site_category(self):
+
+        """
+            return x and y of empty zones
+            [[x1, y1], [x2, y2]...]
+        """
+
+        empty_site_list =[]
+        zone_site_list = []
+
+
+        for i in range(self.height):
+            for j in range(self.width):
+                if (self.map[i][j] != "X") and (self.map[i][j] != "I") and (self.map[i][j] != "C") and (self.map[i][j] != "R"):
+                    empty_site_list.append([j, i])
+                elif (self.map[i][j] == "I") or (self.map[i][j] == "C") or (self.map[i][j] == "R"):
+                    zone_site_list.append([j, i])
+
+        return empty_site_list, zone_site_list
+
+
+#####################################
+# Hill Climbing
+#####################################
+
+class Hillclimbing:
+
+    def __init__(self, time_limit=10):
+        # self.h = heuristic
+        # self.total_cost = 0
+        # self.restart = 0
+        self.time_limit = time_limit
+        self.start_time = time.time()
+        self.expanded_nodes = []
+        self.expanded_nodes_score = []
+        self.current_score = -float("inf")
+        self.next_nodes = []
+        self.next_nodes_score = []
+
+    def expand_node(self, init_map):
+
+        def simulated_annealing(l_cur, l_next, t_delta):
+
+            T = math.log10(t_delta)*100
+
+            p = math.e**(- abs(l_next - l_cur)/T)
+
+            rd = random.random()
+
+            if rd < p:
+
+                return True
+
+            else:
+
+                return False
+
+        """ start to play """
+
+        init_map.place_all()
+
+
+        while time.time() < (self.start_time + self.time_limit):
+
+            # find all the scores of all the possible options including {check, move, add}
+
+            empty_site_list, zone_site_list = init_map.site_category()
+
+            # move
+            # zone_site_list: I, C, R
+            for z in zone_site_list:
+                # empty_site_list: # or S
+                for emp in empty_site_list:
+
+                    # copy the current map, use the copy for next potential move
+                    next_move_map = copy.deepcopy(init_map)
+                    # remove the one we want move
+                    site_cur = next_move_map.map[z[1], z[0]]
+                    next_move_map.remove(z[0], z[1])
+                    # place the one
+                    next_move_map.place_site(site_cur, emp[0], emp[1])
+                    # get the score
+                    next_move_score = next_move_map.update_score()
+
+                    self.next_nodes.append(next_move_map.map.copy().tolist())
+                    self.next_nodes_score.append(next_move_score)
+
+                    if next_move_map.map.copy().tolist() not in self.expanded_nodes:
+                        self.expanded_nodes.append(next_move_map.map.copy().tolist())
+                        self.expanded_nodes_score.append(next_move_score)
+                    else:
+                        None
+
+            # remove
+            for z in zone_site_list:
+                # copy the current map, use the copy for next potential move
+                next_move_map = copy.deepcopy(init_map)
+                # remove the one we want move
+                next_move_map.remove(z[0], z[1])
+                # get the score
+                next_move_score = next_move_map.update_score()
+
+                self.next_nodes.append(next_move_map.map.copy().tolist())
+                self.next_nodes_score.append(next_move_score)
+
+                if next_move_map.map.copy().tolist() not in self.expanded_nodes:
+                    self.expanded_nodes.append(next_move_map.map.copy().tolist())
+                    self.expanded_nodes_score.append(next_move_score)
+                else:
+                    None
+
+            # add
+            for emp in empty_site_list:
+                if init_map.industrial < INDUSTRIAL_MAX:
+                    # copy the current map, use the copy for next potential move
+                    next_move_map = copy.deepcopy(init_map)
+                    # place "I"
+                    next_move_map.place_site("I", emp[0], emp[1])
+
+                    # get the score
+                    next_move_score = next_move_map.update_score()
+
+                    self.next_nodes.append(next_move_map.map.copy().tolist())
+                    self.next_nodes_score.append(next_move_score)
+
+                    if next_move_map.map.copy().tolist() not in self.expanded_nodes:
+                        self.expanded_nodes.append(next_move_map.map.copy().tolist())
+                        self.expanded_nodes_score.append(next_move_score)
+                    else:
+                        None
+
+                if init_map.commercial < COMMERCIAL_MAX:
+                    # copy the current map, use the copy for next potential move
+                    next_move_map = copy.deepcopy(init_map)
+                    # place "C"
+                    next_move_map.place_site("C", emp[0], emp[1])
+
+                    # get the score
+                    next_move_score = next_move_map.update_score()
+
+                    self.next_nodes.append(next_move_map.map.copy().tolist())
+                    self.next_nodes_score.append(next_move_score)
+
+                    if next_move_map.map.copy().tolist() not in self.expanded_nodes:
+                        self.expanded_nodes.append(next_move_map.map.copy().tolist())
+                        self.expanded_nodes_score.append(next_move_score)
+                    else:
+                        None
+
+                if init_map.residential < RESIDENTIAL_MAX:
+                    # copy the current map, use the copy for next potential move
+                    next_move_map = copy.deepcopy(init_map)
+                    # place "R"
+                    next_move_map.place_site("R", emp[0], emp[1])
+
+                    # get the score
+                    next_move_score = next_move_map.update_score()
+
+                    self.next_nodes.append(next_move_map.map.copy().tolist())
+                    self.next_nodes_score.append(next_move_score)
+
+                    if next_move_map.map.copy().tolist() not in self.expanded_nodes:
+                        self.expanded_nodes.append(next_move_map.map.copy().tolist())
+                        self.expanded_nodes_score.append(next_move_score)
+                    else:
+                        None
+
+            max_score = max(self.next_nodes_score)
+
+            if max_score > self.current_score:
+
+                choice_map = [self.next_nodes[i] for i, e in enumerate(self.next_nodes_score) if e == max_score]
+
+                init_map.map = np.array(choice_map[random.randint(1, len(choice_map)) - 1])
+
+                self.next_nodes = []
+                self.next_nodes_score = []
+
+            else:
+
+                is_continue = simulated_annealing(max_score , self.current_score, t_delta = time.time() - self.start_time)
+
+                if is_continue:
+
+                    choice_map = [self.next_nodes[i] for i, e in enumerate(self.next_nodes_score) if e == max_score]
+
+                    init_map.map = np.array(choice_map[random.randint(1, len(choice_map)) - 1])
+
+                    self.next_nodes = []
+                    self.next_nodes_score = []
+
+                else:
+
+                    init_map.map = init_map.starting_map.copy()
+                    init_map.score = 0
+                    init_map.industrial = 0
+                    init_map.commercial = 0
+                    init_map.residential = 0
+                    init_map.place_all()
+
+                    self.current_score = -float('inf')
+                    self.next_nodes = []
+                    self.next_nodes_score = []
+
+    def display_result(self):
+
+        max_final_score = max(self.expanded_nodes_score)
+
+        choice_map = [self.expanded_nodes[i] for i, e in enumerate(self.expanded_nodes_score) if e == max_final_score]
+
+        for i in choice_map:
+
+            print("Best Score: \n", max_final_score, "\n")
+            print("Best Map:")
+            print(i)
+            print("Total Time: ", time.time() - self.start_time)
+
 
 #####################
 # Script Start
@@ -655,6 +896,16 @@ loc_maximums = parse_csv_file_maximums()
 INDUSTRIAL_MAX = loc_maximums[0]
 COMMERCIAL_MAX = loc_maximums[1]
 RESIDENTIAL_MAX = loc_maximums[2]
+
+
+print(starting_map)
+# print(type(starting_map))
+# print(loc_maximums)
+# mp = Map(starting_map)
+# mp.place_all()
+# print(type(mp.map))
+# print(mp.map.tolist())
+# print(mp.score)
 
 if __options__.algorithm == 'GA':
 
@@ -801,4 +1052,12 @@ if __options__.algorithm == 'GA':
 
 
 elif __options__.algorithm == 'HC':
+
     print("implement HC here")
+    print("----------------------------------------------")
+
+    init_map = Map(starting_map)
+    hc = Hillclimbing(10)
+    hc.expand_node(init_map)
+    hc.display_result()
+
