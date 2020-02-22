@@ -702,6 +702,7 @@ class Hillclimbing:
         self.start_time = time.time()
         self.expanded_nodes = []
         self.expanded_nodes_score = []
+        self.expanded_nodes_time = []
         self.current_score = -float("inf")
         self.next_nodes = []
         self.next_nodes_score = []
@@ -757,6 +758,7 @@ class Hillclimbing:
                     if next_move_map.map.copy().tolist() not in self.expanded_nodes:
                         self.expanded_nodes.append(next_move_map.map.copy().tolist())
                         self.expanded_nodes_score.append(next_move_score)
+                        self.expanded_nodes_time.append(time.time() - self.start_time)
                     else:
                         None
 
@@ -775,6 +777,7 @@ class Hillclimbing:
                 if next_move_map.map.copy().tolist() not in self.expanded_nodes:
                     self.expanded_nodes.append(next_move_map.map.copy().tolist())
                     self.expanded_nodes_score.append(next_move_score)
+                    self.expanded_nodes_time.append(time.time() - self.start_time)
                 else:
                     None
 
@@ -795,6 +798,7 @@ class Hillclimbing:
                     if next_move_map.map.copy().tolist() not in self.expanded_nodes:
                         self.expanded_nodes.append(next_move_map.map.copy().tolist())
                         self.expanded_nodes_score.append(next_move_score)
+                        self.expanded_nodes_time.append(time.time() - self.start_time)
                     else:
                         None
 
@@ -813,6 +817,7 @@ class Hillclimbing:
                     if next_move_map.map.copy().tolist() not in self.expanded_nodes:
                         self.expanded_nodes.append(next_move_map.map.copy().tolist())
                         self.expanded_nodes_score.append(next_move_score)
+                        self.expanded_nodes_time.append(time.time() - self.start_time)
                     else:
                         None
 
@@ -831,6 +836,7 @@ class Hillclimbing:
                     if next_move_map.map.copy().tolist() not in self.expanded_nodes:
                         self.expanded_nodes.append(next_move_map.map.copy().tolist())
                         self.expanded_nodes_score.append(next_move_score)
+                        self.expanded_nodes_time.append(time.time() - self.start_time)
                     else:
                         None
 
@@ -876,12 +882,14 @@ class Hillclimbing:
         max_final_score = max(self.expanded_nodes_score)
 
         choice_map = [self.expanded_nodes[i] for i, e in enumerate(self.expanded_nodes_score) if e == max_final_score]
+        choice_time = [self.expanded_nodes_time[i] for i, e in enumerate(self.expanded_nodes_score) if e == max_final_score]
 
-        for i in choice_map:
+        for i in range(len(choice_map)):
 
             print("Best Score: \n", max_final_score, "\n")
             print("Best Map:")
-            print(i)
+            print(choice_map[i])
+            print("At %f that score was first achieved" %choice_time[i])
             print("Total Time: ", time.time() - self.start_time)
 
 
