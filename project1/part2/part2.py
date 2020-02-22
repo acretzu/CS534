@@ -711,7 +711,7 @@ class Hillclimbing:
 
         def simulated_annealing(l_cur, l_next, t_delta):
 
-            T = math.log10(t_delta)*100
+            T = math.log10(t_delta)
 
             p = math.e**(- abs(l_next - l_cur)/T)
 
@@ -881,6 +881,7 @@ class Hillclimbing:
 
         max_final_score = max(self.expanded_nodes_score)
 
+        choice = [i for i, e in enumerate(self.expanded_nodes_score) if e == max_final_score]
         choice_map = [self.expanded_nodes[i] for i, e in enumerate(self.expanded_nodes_score) if e == max_final_score]
         choice_time = [self.expanded_nodes_time[i] for i, e in enumerate(self.expanded_nodes_score) if e == max_final_score]
 
@@ -890,6 +891,7 @@ class Hillclimbing:
             print("Best Map:")
             print(choice_map[i])
             print("At %f that score was first achieved" %choice_time[i])
+            print("At No.%i node that score was first achieved" %choice[i])
             print("Total Time: ", time.time() - self.start_time)
 
 
@@ -1064,7 +1066,14 @@ elif __options__.algorithm == 'HC':
     print("implement HC here")
     print("----------------------------------------------")
 
+    print("Industrial Max: ", INDUSTRIAL_MAX)
+    print("Commercial Max: ", COMMERCIAL_MAX)
+    print("Residential Max: ", RESIDENTIAL_MAX)
+    print("Starting Map:\n", np.array(starting_map), "\n")
     init_map = Map(starting_map)
+    init_map.print_fancy()
+    print("\n")
+
     hc = Hillclimbing(10)
     hc.expand_node(init_map)
     hc.display_result()
