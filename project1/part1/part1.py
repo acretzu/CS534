@@ -132,7 +132,8 @@ class N_QueenChess:
 
         """
 
-        cost = self.weights[queen_to_move] * ((self.columns[queen_to_move] - move_to_where) ** 2)
+
+        cost = (self.weights[queen_to_move] ** 2) * (abs(self.columns[queen_to_move] - move_to_where))
 
         return cost
 
@@ -151,7 +152,8 @@ class N_QueenChess:
             print()
         print("---------------------------------")
 
-    def h1(self):
+        
+    def h1(self, add_cost = False):
 
         """
             Check Heuristics 1
@@ -163,10 +165,8 @@ class N_QueenChess:
             Outputs:
                 h1_board: h1 for each pontential move, displayed as a board
                 h1_current: h1 for current board
-        """
-        print("axc - h1 start")
+        """        
         def calculate_h1(columns, weights, size):
-            #print("axc-calculate_h1 start")
             attack_queen_list = set()
 
             for queen_column in range(size):
@@ -193,33 +193,33 @@ class N_QueenChess:
                 # there is no attacking queen pairs
                 h1_self = 0
 
-            print("calculate_h1 returning = ", h1_self)
             return h1_self
 
         # --------------------------------------------------
         # h1 for each pontential move, displayed as a board
         h1_board = np.zeros((self.size, self.size))
-
-        print (h1_board)
         
         for i in range(self.size):
             for j in range(self.size):
                 if self.columns[j] != i:
                     next_move = self.columns.copy()
-                    print("axc next_move = %s", next_move)
                     next_move[j] = i
-                    print("axc next_move[j] = %s", next_move)
-                    h1_board[i, j] = calculate_h1(next_move, self.weights, self.size)
-                    print("h1_board = " , h1_board)
+                    
+                    if(add_cost):
+                        move_cost = self.cost(j, i)
+                        #print ("Cost to move queen ", i, "to row ", j, " = ", move_cost)
+                        h1_board[i, j] = calculate_h1(next_move, self.weights, self.size) + move_cost
+                    else:
+                        h1_board[i, j] = calculate_h1(next_move, self.weights, self.size)
+                    
 
                 else:
                     # let's assume the current h1 is infinte, then we can get the min of neighbours
                     h1_board[i, j] = float("inf")
 
-        print("axc final board = \n", h1_board)
         return h1_board, calculate_h1(self.columns, self.weights, self.size)
 
-    def h2(self):
+    def h2(self, add_cost = False):
 
         """
             Check Heuristics 2
@@ -268,7 +268,13 @@ class N_QueenChess:
                 if self.columns[j] != i:
                     next_move = self.columns.copy()
                     next_move[j] = i
-                    h2_board[i, j] = calculate_h2(next_move, self.weights, self.size)
+
+                    if(add_cost):
+                        move_cost = self.cost(j, i)
+                        #print ("Cost to move queen ", i, "to row ", j, " = ", move_cost)
+                        h2_board[i, j] = calculate_h2(next_move, self.weights, self.size) + move_cost
+                    else:                        
+                        h2_board[i, j] = calculate_h2(next_move, self.weights, self.size)
 
                 else:
                     # let's assume the current h2 is infinte, then we can get the min of neighbours
@@ -398,7 +404,6 @@ class Hillclimbing:
             """
             h_min = h_board.min()
 
-            print("h_min = ", h_min)
             # Sideway occurs and we can make sideways moves within limits
             if (h_min == h_self) and (self.sideway <= self.sideway_limit):
 
@@ -407,11 +412,6 @@ class Hillclimbing:
                 rd = random.randint(1, len(choice[0]))
                 queen_to_move = choice[1][rd - 1]
                 move_to_where = choice[0][rd - 1]
-
-                print("axc SW choice = ", choice)
-                print("axc SW rd = ", rd)
-                print("axc SW q_to_m = ", queen_to_move)
-                print("axc SW m_to_w = ", move_to_where)
                 
                 # update data the cost
                 self.cost += n_queen_board.cost(queen_to_move, move_to_where)
@@ -438,11 +438,6 @@ class Hillclimbing:
                 rd = random.randint(1, len(choice[0]))
                 queen_to_move = choice[1][rd - 1]
                 move_to_where = choice[0][rd - 1]
-
-                print("axc choice = ", choice)
-                print("axc rd = ", rd)
-                print("axc q_to_m = ", queen_to_move)
-                print("axc m_to_w = ", move_to_where)
                 
                 # update data the cost
                 self.cost += n_queen_board.cost(queen_to_move, move_to_where)
@@ -497,15 +492,22 @@ class PriorityQueue:
     def __init__(self):
         self.queue = []
 
-    def enqueue(self, h_board, cost):
-        # Loop thru queue and compare costs
-        for i in len(self.queue):
-            if(cost <= self.queue[cost]):
-                self.queue.insert(h_board, i)
-                print("PriorityQueue inserting board at position ", i)
+    def add(self, h_board, cost):
 
-    def dequeue():
-        return self.queue.pop[0]
+        if len(self.queue) == 0:
+            self.queue.append(h_board)
+        else:
+            # Loop thru queue and compare costs
+            for i in len(self.queue):
+                if(cost <= self.queue[cost]):
+                    self.queue.insert(h_board, i)
+                    print("PriorityQueue inserting board at position ", i)
+
+    def remove(self):
+        return self.queue.pop(0)
+
+    def isEmpty(self):
+        return 1 if len(self.queue) == 0 else 0
         
             
 ################################################
@@ -514,63 +516,61 @@ class PriorityQueue:
 
 class A_Star:
 
-    def __init__(self, n_queen_board, heuristic, restart_limit=5, sideway_limit=5):
+    def __init__(self, n_queen_board, heuristic):
 
         self.h = heuristic
-        self.cost = 0
-        self.sideway = 0
-        self.node = [n_queen_board.columns.copy()]
-        self.restart = 0
-        self.restart_limit = restart_limit
-        self.sideway_limit = sideway_limit
-        self.pq = PriorityQueue()
-        print("A-Star using Heurisitc: " + heuristic)
+        self.frontier = PriorityQueue()
+        self.came_from = {}
+        self.cost_so_far = {}
+        self.frontier.add(n_queen_board, 0)
+        self.came_from[n_queen_board] = 0
+        self.cost_so_far[n_queen_board] = 0
+        
+    def expand(self):
 
-    def expand(self, n_queen_board):
+        while not self.frontier.isEmpty():
+            current_board = self.frontier.remove()
+            print("current board:")
+            current_board.display()
 
-        '''
-         Expand the current tree node.
-         Add one child node for each possible next move in the game.
-         Inputs:
-                node: the current tree node to be expanded
-         Outputs:
-                c.children: a list of children nodes.
-        '''
+            # Exit if solution was found
+            if current_board.attacks() == 0:
+                break
 
-        def play_rule(h_board, h_self):
+            for c in range(current_board.size):
+                for r in range(current_board.size):
 
-            print ("AXC h_board type = %s", type(h_board))
-            print ("AXC h_self type = %s", type(h_self))
+                    neighbor_board = None
+                    heurisitc = None
+                    
+                    if self.h == "h1":
+                        neighbor_board, heuristic = current_board.h1(True)                
+                    elif self.h == "h2":
+                        neighbor_board, heurisitic = current_board.h2(True)
 
-            """
-            Given the heuristic for all potential moves and current state, play the next move
-            """
+                    
+                    new_cost = self.cost_so_far[current_board] + neighbor_board[c][r];
+                    print("neighbor_board[c][r] = ", neighbor_board[c][r], "new_cost = ", new_cost)
+                    
+                    #print("rows of queens = ", )
 
-            # F(x) = g(x) * h(x)
-            h_min = h_board.min()
+                    if neighbor_board not in self.cost_so_far:
+                        self.cost_so_far[neighbor_board] = new_cost
+                        self.frontier.add
+                        
+
+            print(neighbor_board)
+            sys.exit(1)
+            # Loop thrue board and find smallest costs
 
 
-        """
-        start to play
-        """
-        # check if game is over
-        if n_queen_board.attacks() == 0:
-            print("Game over")
-
-        # if game is not over, check which heuristic is used to play game
-
-        # is heuristic 1?
-        elif self.h == "h1":
-
-            h1_board, h1_self = n_queen_board.h1()
-            play_rule(h1_board, h1_self)
-
-        # is heuristic 2?
-        elif self.h == "h2":
-
-            h2_board, h2_self = n_queen_board.h2()
-            play_rule(h2_board, h2_self)
-  
+        
+            # What am I adding to the frontier?            
+            # - Am I adding the board + the cost 
+            # - Is my new_cost = h + move_cost?
+            # From the algorithm... what are my neighbors? Entire boards? Just costs of moving.
+            # - I will still need to keep the board incase I backtrack
+   
 
 #####################
 # Script Start
@@ -586,7 +586,7 @@ starting_board = parse_csv_file()
 
 
 n_queen = N_QueenChess(starting_board)
-n_queen.display()
+#n_queen.display()
 #n_queen.test()
 
 #hc_h1 = Hillclimbing(n_queen_board = n_queen, heuristic = "h1")
@@ -601,4 +601,4 @@ n_queen.display()
 #n_queen.display()
 
 a_star = A_Star(n_queen_board = n_queen, heuristic = "h1")
-a_star.expand(n_queen)
+a_star.expand()
