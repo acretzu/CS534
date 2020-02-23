@@ -1,0 +1,31 @@
+Current State =  2 0 2 1 
+current_hx =  18
+. 2 . . 
+. . . 6 
+9 . 3 . 
+. . . . 
+---------------------------------
+Current State =  2 0 3 1 
+current_hx =  0
+. 2 . . 
+. . . 6 
+9 . . . 
+. . 3 . 
+---------------------------------
+A* algorithm path to goal:
+. 2 . . 
+. . . 6 
+9 . 3 . 
+. . . . 
+---------------------------------
+. 2 . . 
+. . . 6 
+9 . . . 
+. . 3 . 
+---------------------------------
+Heuristic        = h2
+Total time (s)   = 0.0
+Total cost       = 9
+Nodes expanded   = 1
+Moves to solve   = 1
+Branching factor = 0.5

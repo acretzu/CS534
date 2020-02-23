@@ -777,8 +777,13 @@ class A_Star:
             # Remove head of frontier
             current_state_str = self.frontier.remove()[1]
             current_state_list = self.str_2_list(current_state_str)
+            
             # Debug
             #print("Current State = ", current_state_str)
+            
+            # Prints to prove H2 is not admissible
+            #current_hx = self.get_h_cost(current_state_list)
+            #print("current_hx = ", current_hx)
 
             self.board.update_board(current_state_list)
             # Debug
@@ -806,7 +811,7 @@ class A_Star:
                         neighbor_state_list = current_state_list.copy()
                         neighbor_state_list[c] = r
                         neighbor_state_str = self.list_2_str(neighbor_state_list)
-
+                        
                         # Calculate A* parameters
                         next_gx = self.board.cost(c,r)
                         next_hx = self.get_h_cost(neighbor_state_list)
