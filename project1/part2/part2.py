@@ -24,7 +24,7 @@ RESIDENTIAL_MAX = 0
 #
 def parse_cmd_line_options():
     parser = OptionParser()
-    parser.add_option("--f", action="store", type="string", dest="csv", default="urban_2.txt",
+    parser.add_option("--f", action="store", type="string", dest="csv", default="urban_1.txt",
                       help="The local path to the CSV file.")
     # parser.add_option("--e", action="store", type="string", dest="algorithm", default="GA", help="The algorithm.")
     parser.add_option("--e", action="store", type="string", dest="algorithm", default="HC", help="The algorithm.")
@@ -364,11 +364,16 @@ class Map:
                 if (self.map[y][x] == 'I' or
                         self.map[y][x] == 'C' or
                         self.map[y][x] == 'R'):
-
                     if self.starting_map[y][x] == 'S':
                         cost += 1
                     else:
-                        cost += int(self.starting_map[y][x])
+                        """
+                        1...9:  how difficult it is to build on that square.  
+                        To build a zone on any square costs 2+difficulty.  
+                        So building a Commercial zone on a square of difficulty 6 costs 8 points.  
+                        You will receive a penalty of that many points to put any zone on that square.
+                        """
+                        cost += int(self.starting_map[y][x])+2
 
         return cost
 
