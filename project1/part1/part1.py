@@ -10,6 +10,7 @@ import random
 import time
 import sys
 import copy
+import pandas as pd
 
 
 
@@ -25,7 +26,7 @@ starting_board = []
 def parse_cmd_line_options():
     parser = OptionParser()
     parser.add_option("--e", action="store", type="string", dest="heuristic", default="h1", help="The heuristic.")
-    parser.add_option("--a", action="store", type="int", dest="algorithm", default=1, help="The algorithm.")
+    parser.add_option("--a", action="store", type="int", dest="algorithm", default=2, help="The algorithm.")
     parser.add_option("--f", action="store", type="string", dest="csv", default="heavy_queens_board.csv", help="The local path to the CSV file.")
 
     (options, args) = parser.parse_args()
@@ -283,13 +284,13 @@ class N_QueenChess:
                 if self.columns[j] != i:
                     next_move = copy.deepcopy(self.columns)
                     next_move[j] = i
-                    h2_board[i, j] = calculate_h2(next_move, self.weights, self.size)
+                    h2_board[i, j] = self.calculate_h2(next_move, self.weights, self.size)
 
                 else:
                     # let's assume the current h2 is infinte, then we can get the min of neighbours
                     h2_board[i, j] = float("inf")
 
-        return h2_board, calculate_h2(self.columns, self.weights, self.size)
+        return h2_board, self.calculate_h2(self.columns, self.weights, self.size)
 
     def attacks(self):
         '''
@@ -358,7 +359,7 @@ class Hillclimbing:
         self.total_start_time = time.time()
         self.start_time = time.time()
 
-        print("Start Game with " + heuristic)
+        print("Start Game using Hill Climbing with " + heuristic)
         print("----------------------------------------------")
 
         print("Start board state")
@@ -429,7 +430,7 @@ class Hillclimbing:
                 n_queen_board.play(queen_to_move, move_to_where)
 
                 # add the node
-                self.node.append(n_queen_board.columns)
+                self.node.append(copy.deepcopy(n_queen_board.columns))
 
                 # update the number of sideway moves
                 self.sideway += 1
@@ -493,6 +494,9 @@ class Hillclimbing:
         # check if game is over
         while n_queen_board.attacks() != 0:
 
+            if (time.time() - self.total_start_time) > (10*n_queen_board.size):
+                break
+
             # if game is not over, check which heuristic is used to play game
 
             # is heuristic 1?
@@ -507,12 +511,26 @@ class Hillclimbing:
                 h2_board, h2_self = n_queen_board.h2()
                 play_rule(h2_board, h2_self)
 
-    def display_result(self):
-        # print("The number of nodes expanded: %f" )  ==> waiting for TA response
-        print("It takes %f to finish the game" %(time.time() - self.total_start_time))
-        # print("The effective branching factor: ")  ===> waiting for TA response
-        print("The cost to solve the puzzle: %i" %self.total_cost())
-        # print("The sequence of moves needed to solve the puzzle:") ===> waiting for TA response
+    def display_result(self, n_queen_board):
+
+        print("Heuristic        =", self.h)
+        print("Total time (s)   =", (time.time() - self.total_start_time))
+        print("Total cost       =", self.total_cost)
+        print("Nodes expanded   =", len(self.node)-1)
+        print("Moves to solve   =", len(self.node)-1)
+        print("Branching factor =", 1)
+        for i in self.node:
+            for column in range(n_queen_board.size):
+                for row in range(n_queen_board.size):
+                    if column == i[row]:
+                        print(n_queen_board.weights[row], end=' ')
+                    else:
+                        print('.', end=' ')
+                print()
+            print("---------------------------------")
+
+        return [n_queen.size, (time.time() - self.total_start_time), self.total_cost, len(self.node)-1, len(self.node)-1, 1, n_queen_board.attacks()]
+
 
 
 ###############################################
@@ -527,10 +545,10 @@ class PriorityQueue:
         '''
            Adds a tuple (cost, state) to the list where lower costs are at the front of the queue.
 
-           Inputs: 
+           Inputs:
               Cost - Integer cost of the state
               State - Space-separated string representing the new state of queens
-           Outputs: 
+           Outputs:
               None
         '''
         # Append tuple if list is empty
@@ -559,9 +577,9 @@ class PriorityQueue:
         '''
            Removes tuple from the front of the queue
 
-           Inputs: 
+           Inputs:
               None
-           Outputs: 
+           Outputs:
               Tuple (cost, state)
         '''
         return self.queue.pop(0)
@@ -570,9 +588,9 @@ class PriorityQueue:
         '''
            Returns 1 if queue is empty, else 0
 
-           Inputs: 
+           Inputs:
               None
-           Outputs: 
+           Outputs:
               1 if queue is empty, else 0
         '''
         return 1 if len(self.queue) == 0 else 0
@@ -581,9 +599,9 @@ class PriorityQueue:
         '''
            Returns 1 space-seperated string of queens exists in the queue
 
-           Inputs: 
+           Inputs:
               Space-separated string of queens
-           Outputs: 
+           Outputs:
               1 if input string exists in the queue, else 0
         '''
         for pair in self.queue:
@@ -595,9 +613,9 @@ class PriorityQueue:
         '''
            Returns the cost of the tuple at queue position i.
 
-           Inputs: 
+           Inputs:
               None
-           Outputs: 
+           Outputs:
               The cost of the tuple at queue position i.
         '''
         return self.queue[i][0]
@@ -606,9 +624,9 @@ class PriorityQueue:
         '''
            Returns the state of the tuple at queue position i.
 
-           Inputs: 
+           Inputs:
               None
-           Outputs: 
+           Outputs:
               The state of tuple at queue position i.
         '''
         return self.queue[i][1]
@@ -617,9 +635,9 @@ class PriorityQueue:
         '''
            Prints the priority queue. Mainly used for debug
 
-           Inputs: 
+           Inputs:
               None
-           Outputs: 
+           Outputs:
               None
         '''
         print("Printing Frontier:")
@@ -654,10 +672,10 @@ class A_Star:
         '''
            Converts a list of integers into a space-separated string.
 
-           Inputs: 
+           Inputs:
               List of integers.
-           Outputs: 
-              Space-separated string.              
+           Outputs:
+              Space-separated string.
         '''
         return "".join(str(x)+" " for x in l)
 
@@ -665,9 +683,9 @@ class A_Star:
         '''
            Converts a space-separated string into a list of integers.
 
-           Inputs: 
+           Inputs:
               Space-separated string.
-           Outputs: 
+           Outputs:
               List of integers.
         '''
         return [int(i) for i in s.split()]
@@ -707,9 +725,9 @@ class A_Star:
         '''
            Utility function which uses the n_queens_board to calculate the heuristic given the state (columns) of queens
 
-           Inputs: 
+           Inputs:
               List of queens per column. Position 0 = left-most queeen.
-           Outputs: 
+           Outputs:
               Integer heuristic cost.
         '''
         cost = 0
@@ -724,9 +742,9 @@ class A_Star:
         '''
            Prints the move from the starting board to the ending (goal) board
 
-           Inputs: 
+           Inputs:
               None
-           Outputs: 
+           Outputs:
               None
         '''
         current = self.goal_state
@@ -748,9 +766,9 @@ class A_Star:
         '''
            Prints the result of A*. Must only be called after execution of expand()
 
-           Inputs: 
+           Inputs:
               None
-           Outputs: 
+           Outputs:
               None
         '''
         self.print_path_to_goal()
@@ -765,22 +783,22 @@ class A_Star:
         '''
            Executes the A* algorithm.
 
-           Inputs: 
+           Inputs:
               None
-           Outputs: 
+           Outputs:
               None
         '''
         while not self.frontier.isEmpty():
             # Debug
             #self.frontier.print()
-            
+
             # Remove head of frontier
             current_state_str = self.frontier.remove()[1]
             current_state_list = self.str_2_list(current_state_str)
-            
+
             # Debug
             #print("Current State = ", current_state_str)
-            
+
             # Prints to prove H2 is not admissible
             #current_hx = self.get_h_cost(current_state_list)
             #print("current_hx = ", current_hx)
@@ -788,7 +806,7 @@ class A_Star:
             self.board.update_board(current_state_list)
             # Debug
             #self.board.display()
-            
+
             # Debug
             #print("Attacking = ", self.find_attacking_queens(current_state_list))
             # Exit if solution was found
@@ -811,7 +829,7 @@ class A_Star:
                         neighbor_state_list = current_state_list.copy()
                         neighbor_state_list[c] = r
                         neighbor_state_str = self.list_2_str(neighbor_state_list)
-                        
+
                         # Calculate A* parameters
                         next_gx = self.board.cost(c,r)
                         next_hx = self.get_h_cost(neighbor_state_list)
@@ -832,17 +850,13 @@ class A_Star:
 # Script Start
 #####################
 
-# sys.setrecursionlimit(10000)
-
 __options__ = parse_cmd_line_options()
 starting_board = parse_csv_file()
-# starting_board = makeup_board(5)
-
 
 
 n_queen = N_QueenChess(starting_board)
 # n_queen.display()
-# # n_queen.test()
+# n_queen.test()
 # #
 
 if __options__.algorithm == 1:
@@ -850,15 +864,27 @@ if __options__.algorithm == 1:
     a_star.expand()
     a_star.results()
 else:
-    hc = Hillclimbing(n_queen = n_queen, heuristic = __options__.heuristic)
+    hc = Hillclimbing(n_queen_board = n_queen, heuristic = __options__.heuristic)
     hc.expand(n_queen)
-    hc.display_result()
+    hc.display_result(n_queen)
 
-# hc_h1 = Hillclimbing(n_queen_board = n_queen, heuristic = "h1")
-# hc_h1.expand(n_queen)
-# hc_h1.display_result()
-# #
-# n_queen = N_QueenChess(starting_board)
-# hc_h2 = Hillclimbing(n_queen_board = n_queen, heuristic = "h2")
-# hc_h2.expand(n_queen)
-# hc_h2.display_result()
+
+    # '''
+    # below for analysis
+    # '''
+    # result = []
+    #
+    # for s in range(6):
+    #     for i in range(5):
+    #         for sd in range(4):
+    #             starting_board = makeup_board(s+4)
+    #             n_queen = N_QueenChess(starting_board)
+    #             hc = Hillclimbing(n_queen_board=n_queen, heuristic=__options__.heuristic, time_limit= 1, sideway_limit=sd)
+    #             hc.expand(n_queen)
+    #
+    #             result.append(hc.display_result(n_queen).append(s))
+    #
+    # result_pd = pd.DataFrame(result,
+    #                          columns=['Board Size', 'Total time (s)', '"Total cost', 'Nodes expanded', 'Moves to solve', 'Branching factor', 'n_attacks', 'sideway_limits'])
+    #
+    # result_pd.to_csv("result_hc_h1.csv")
