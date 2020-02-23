@@ -24,10 +24,10 @@ RESIDENTIAL_MAX = 0
 #
 def parse_cmd_line_options():
     parser = OptionParser()
-    parser.add_option("--f", action="store", type="string", dest="csv", default="urban_1.txt",
+    parser.add_option("--f", action="store", type="string", dest="csv", default="urban_2.txt",
                       help="The local path to the CSV file.")
     # parser.add_option("--e", action="store", type="string", dest="algorithm", default="GA", help="The algorithm.")
-    parser.add_option("--e", action="store", type="string", dest="algorithm", default="HC", help="The algorithm.")
+    parser.add_option("--e", action="store", type="string", dest="algorithm", default="GA", help="The algorithm.")
 
     (options, args) = parser.parse_args()
 
@@ -942,11 +942,12 @@ if __options__.algorithm == 'GA':
         return map.score
 
 
-    # Population pool
+    # Hyperparameters (adjust for better performance)
     pool_size = 100  # this has to be even
     elite_percent = 5  # percent
     generations = 100
     mutation_chance = 3  # percent
+    time_limit = 7  # seconds
     map_pool = []
     parents = []
     new_map_pool = []
@@ -1007,10 +1008,6 @@ if __options__.algorithm == 'GA':
 
             # Crossover and add child to new generation
             child = parents[0].crossover(parents[1])
-            #parents[0].print_fancy()
-            #parents[1].print_fancy()
-            #child.print_fancy()
-            #print("--")
 
             # Add child to new population
             new_map_pool.append(child)
@@ -1049,10 +1046,8 @@ if __options__.algorithm == 'GA':
         for m in map_pool:
             m.update_score()
 
-        if time.time() - start_time > 10:
+        if time.time() - start_time > time_limit:
             break
-
-        #print(map_pool[pool_size - 1].score)
 
     scores = []
     for m in map_pool:
