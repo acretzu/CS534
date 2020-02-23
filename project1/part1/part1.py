@@ -607,8 +607,8 @@ starting_board = parse_csv_file()
 #for queen in starting_board:
 #    print("Queen weight = %d, Queen row = %d, Queen col = %d" % (queen[0], queen[1], queen[2]))
 
-]# n_queen = N_QueenChess(starting_board)
-# # n_queen.display()
+# n_queen = N_QueenChess(starting_board)
+# n_queen.display()
 # # n_queen.test()
 # #
 # hc_h1 = Hillclimbing(n_queen_board = n_queen, heuristic = "h1")
