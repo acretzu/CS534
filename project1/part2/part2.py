@@ -887,6 +887,7 @@ class Hillclimbing:
 
             except:
                 print("You cannot put any zone on the site")
+                break
 
     def display_result(self):
 
