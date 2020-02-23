@@ -24,7 +24,7 @@ starting_board = []
 #
 def parse_cmd_line_options():
     parser = OptionParser()
-    parser.add_option("--e", action="store", type="int", dest="heuristic", default="h1", help="The heuristic.")
+    parser.add_option("--e", action="store", type="string", dest="heuristic", default="h1", help="The heuristic.")
     parser.add_option("--a", action="store", type="int", dest="algorithm", default=1, help="The algorithm.")
     parser.add_option("--f", action="store", type="string", dest="csv", default="heavy_queens_board.csv", help="The local path to the CSV file.")
 
@@ -104,6 +104,22 @@ class N_QueenChess:
         self.weights = [i[2] for i in starting_board]
         self.size = len(self.weights)
 
+    def set_columns_from_string( col_str ):
+        print("Foo")
+        #self.columns
+
+    def update_board(self, cols):
+        """
+        Set board to the provided state (cols = queens)
+
+        """
+        if len(cols) != len(self.columns):
+            print("Updating to a board with incorrect size!")
+            sys.exit(1)
+
+        for pos in range(len(cols)):
+            self.columns[pos] = cols[pos]
+
     def play(self, queen_to_move, move_to_where):
 
         """
@@ -160,10 +176,10 @@ class N_QueenChess:
 
     def calculate_h1(self, columns, weights, size):
         attack_queen_list = set()
-        
+
         for queen_column in range(size):
             for compare_column in range(queen_column + 1, size):
-            
+
                 # check if on the same row
                 if columns[queen_column] == columns[compare_column]:
                     attack_queen_list.add(queen_column)
@@ -183,10 +199,10 @@ class N_QueenChess:
         except:
             # there is no attacking queen pairs
             h1_self = 0
-        
-        return h1_self        
-        
-    def h1(self, add_cost = False):
+
+        return h1_self
+
+    def h1(self):
 
         """
             Check Heuristics 1
@@ -198,8 +214,8 @@ class N_QueenChess:
             Outputs:
                 h1_board: h1 for each pontential move, displayed as a board
                 h1_current: h1 for current board
-        """        
-        
+        """
+
 
         # --------------------------------------------------
         # h1 for each potential move, displayed as a board
@@ -210,22 +226,42 @@ class N_QueenChess:
                 if self.columns[j] != i:
                     next_move = copy.deepcopy(self.columns)
                     next_move[j] = i
-                    
-                    if(add_cost):
-                        move_cost = self.cost(j, i)
-                        #print ("Cost to move queen ", i, "to row ", j, " = ", move_cost)
-                        h1_board[i, j] = self.calculate_h1(next_move, self.weights, self.size) + move_cost
-                    else:
-                        h1_board[i, j] = self.calculate_h1(next_move, self.weights, self.size)
-                    
-
+                    h1_board[i, j] = self.calculate_h1(next_move, self.weights, self.size)
                 else:
                     # let's assume the current h1 is infinite, then we can get the min of neighbours
                     h1_board[i, j] = float("inf")
 
         return h1_board, self.calculate_h1(self.columns, self.weights, self.size)
 
-    def h2(self, add_cost = False):
+    def calculate_h2(self, columns, weights, size):
+
+        attack_queen_pair_list = set()
+
+        for queen_column in range(size):
+            for compare_column in range(queen_column + 1, size):
+
+                # check if on the same row
+                if columns[queen_column] == columns[compare_column]:
+                    attack_queen_pair_list.add((queen_column, compare_column))
+
+                # check if on the one of diagonals
+                elif queen_column - columns[queen_column] == compare_column - columns[compare_column]:
+                    attack_queen_pair_list.add((queen_column, compare_column))
+
+                # check if on the another diagonal
+                elif queen_column + columns[queen_column] == compare_column + columns[compare_column]:
+                    attack_queen_pair_list.add((queen_column, compare_column))
+        try:
+            h2_self = sum([min(weights[i], weights[j]) ** 2 for i, j in attack_queen_pair_list])
+
+        except:
+            # there is no attacking queen pairs
+            h2_self = 0
+
+        return h2_self
+
+
+    def h2(self):
 
         """
             Check Heuristics 2
@@ -238,33 +274,6 @@ class N_QueenChess:
                 h2_current: h1 for current board
         """
 
-        def calculate_h2(columns, weights, size):
-
-            attack_queen_pair_list = set()
-
-            for queen_column in range(size):
-                for compare_column in range(queen_column + 1, size):
-
-                    # check if on the same row
-                    if columns[queen_column] == columns[compare_column]:
-                        attack_queen_pair_list.add((queen_column, compare_column))
-
-                    # check if on the one of diagonals
-                    elif queen_column - columns[queen_column] == compare_column - columns[compare_column]:
-                        attack_queen_pair_list.add((queen_column, compare_column))
-
-                    # check if on the another diagonal
-                    elif queen_column + columns[queen_column] == compare_column + columns[compare_column]:
-                        attack_queen_pair_list.add((queen_column, compare_column))
-            try:
-                h2_self = sum([min(weights[i], weights[j]) ** 2 for i, j in attack_queen_pair_list])
-
-            except:
-                # there is no attacking queen pairs
-                h2_self = 0
-
-            return h2_self
-
         # --------------------------------------------------
         # h2 for each pontential move, displayed as a board
         h2_board = np.zeros((self.size, self.size))
@@ -274,13 +283,7 @@ class N_QueenChess:
                 if self.columns[j] != i:
                     next_move = copy.deepcopy(self.columns)
                     next_move[j] = i
-
-                    if(add_cost):
-                        move_cost = self.cost(j, i)
-                        #print ("Cost to move queen ", i, "to row ", j, " = ", move_cost)
-                        h2_board[i, j] = calculate_h2(next_move, self.weights, self.size) + move_cost
-                    else:                        
-                        h2_board[i, j] = calculate_h2(next_move, self.weights, self.size)
+                    h2_board[i, j] = calculate_h2(next_move, self.weights, self.size)
 
                 else:
                     # let's assume the current h2 is infinte, then we can get the min of neighbours
@@ -316,6 +319,7 @@ class N_QueenChess:
                     n_attack = n_attack + 1
 
         return n_attack
+
 
     def test(self):
         """
@@ -417,7 +421,7 @@ class Hillclimbing:
                 rd = random.randint(1, len(choice[0]))
                 queen_to_move = choice[1][rd - 1]
                 move_to_where = choice[0][rd - 1]
-                
+
                 # update data the cost
                 self.total_cost += n_queen_board.cost(queen_to_move, move_to_where)
 
@@ -519,24 +523,48 @@ class PriorityQueue:
     def __init__(self):
         self.queue = []
 
-    def add(self, h_board, cost):
+    def add(self, cost, state):
 
         if len(self.queue) == 0:
-            self.queue.append(h_board)
+            self.queue.append( (cost, state) )
+            #print("PriorityQueue is empty. Adding at the end")
         else:
             # Loop thru queue and compare costs
-            for i in len(self.queue):
-                if(cost <= self.queue[cost]):
-                    self.queue.insert(h_board, i)
-                    print("PriorityQueue inserting board at position ", i)
+            i = 0
+            for pair in self.queue:
+                qcost = pair[0]
+                if cost < qcost:
+                    self.queue.insert(i, (cost, state))
+                    #print("PriorityQueue inserting at position ", i, ", cost = ", cost, ", qcost = ", qcost, ", state = ", state)
+                    break
+                elif i == len(self.queue)-1:
+                    self.queue.append( (cost, state) )
+                    #print("PriorityQueue inserting at the end")
+                    break
+                i += 1
 
     def remove(self):
         return self.queue.pop(0)
 
     def isEmpty(self):
         return 1 if len(self.queue) == 0 else 0
-        
-            
+
+    def contains(self, s):
+        for pair in self.queue:
+            if pair[1] == s:
+                return 1
+        return 0
+
+    def get_cost(self, i):
+        return self.queue[i][0]
+
+    def get_state(self, i):
+        return self.queue[i][1]
+
+    def print(self):
+        print("Printing Frontier:")
+        for pair in self.queue:
+            print("Cost = ", pair[0], ", State = ", pair[1])
 
 ################################################
 # A* Algorithm
@@ -546,51 +574,140 @@ class A_Star:
 
     def __init__(self, n_queen_board, heuristic):
 
+        self.board = n_queen_board
         self.h = heuristic
         self.frontier = PriorityQueue()
         self.came_from = {}
         self.cost_so_far = {}
-        self.frontier.add(n_queen_board, 0)
-        self.came_from[n_queen_board] = 0
-        self.cost_so_far[n_queen_board] = 0
-        
+        self.goal_state = ""
+        self.frontier.add(0, self.list_2_str(n_queen_board.columns))
+        self.came_from[self.list_2_str(n_queen_board.columns)] = 0
+        self.cost_so_far[self.list_2_str(n_queen_board.columns)] = 0
+        self.start_state = self.frontier.get_state(0)
+        self.start_time = time.perf_counter()
+        self.stop_time = 0
+        self.nodes_expanded = 0
+        self.solution_length = 0
+        self.total_cost = 0
+
+    def list_2_str(self, l):
+        return "".join(str(x)+" " for x in l)
+
+    def str_2_list(self, s):
+        return [int(i) for i in s.split()]
+
+
+    def find_attacking_queens(self, queen_rows):
+        '''
+            check if the game has ended.
+            Input:
+                self:
+
+            Outputs:
+                n_attack: the result (numbers of pairs of attacking Queen)
+        '''
+
+        n_attack = 0
+        size = len(queen_rows)
+
+        for queen_column in range(size):
+            for compare_column in range(queen_column + 1, size):
+
+                # check if on the same row
+                if queen_rows[queen_column] == queen_rows[compare_column]:
+                    n_attack = n_attack + 1
+
+                # check if on the one of diagonals
+                elif queen_column - queen_rows[queen_column] == compare_column - queen_rows[compare_column]:
+                    n_attack = n_attack + 1
+
+                # check if on the another diagonal
+                elif queen_column + queen_rows[queen_column] == compare_column + queen_rows[compare_column]:
+                    n_attack = n_attack + 1
+
+        return n_attack
+
+    def get_h_cost(self, state):
+        cost = 0
+        if self.h == "h1":
+            cost = self.board.calculate_h1(state, self.board.weights, self.board.size)
+        else:
+            cost = self.board.calculate_h2(state, self.board.weights, self.board.size)
+        return cost
+
+
+    def print_path_to_goal(self):
+        current = self.goal_state
+        path = []
+        while current != self.start_state:
+            path.append(current)
+            current = self.came_from[current]
+        path.append(self.start_state)
+        path.reverse()
+
+        print("A* algorithm path to goal:")
+        for state in path:
+            self.solution_length += 1
+            self.board.update_board(self.str_2_list(state))
+            self.board.display()
+
+
+    def results(self):
+        self.print_path_to_goal()
+        print("Heuristic        =", self.h)
+        print("Total time (s)   =", round(self.stop_time - self.start_time, 3))
+        print("Total cost       =", self.total_cost)
+        print("Nodes expanded   =", self.nodes_expanded)
+        print("Moves to solve   =", (self.solution_length - 1))
+        print("Branching factor =", round(self.nodes_expanded / self.solution_length, 2))
+
     def expand(self):
 
         while not self.frontier.isEmpty():
-            current_board = self.frontier.remove()
-            print("current board:")
-            current_board.display()
+            #self.frontier.print()
+            # Remove head of frontier
+            current_state_str = self.frontier.remove()[1]
+            current_state_list = self.str_2_list(current_state_str)
+            #print("Current State = ", current_state_str)
+
+            self.board.update_board(current_state_list)
+            #self.board.display()
 
             # Exit if solution was found
-            if current_board.attacks() == 0:
+            #print("Attacking = ", self.find_attacking_queens(current_state_list))
+            if self.find_attacking_queens(current_state_list) == 0:
+                #print("Total cost = ", self.cost_so_far[current_state_str])
+                self.total_cost = self.cost_so_far[current_state_str]
+                self.goal_state = current_state_str
+                self.stop_time = time.perf_counter()
                 break
 
-            for c in range(current_board.size):
-                for r in range(current_board.size):
 
-                    neighbor_board = None
-                    heurisitc = None
-                    
-                    if self.h == "h1":
-                        neighbor_board, heuristic = current_board.h1(True)                
-                    elif self.h == "h2":
-                        neighbor_board, heurisitic = current_board.h2(True)
+            # Get neighboring states (i.e. places where we can move)
+            self.nodes_expanded += 1
+            for c in range(self.board.size):
+                for r in range(self.board.size):
+                    queen_in_col = current_state_list[c]
 
-                    
-                    #new_cost = self.cost_so_far[current_board] + neighbor_board[c][r];
-                    #print("neighbor_board[c][r] = ", neighbor_board[c][r], "new_cost = ", new_cost)
-                    
-                    #print("rows of queens = ", )
+                    # If the queen is not in the current state
+                    if queen_in_col != r:
+                        neighbor_state_list = current_state_list.copy()
+                        neighbor_state_list[c] = r
+                        #print("ns = ", neighbor_state_list)
+                        neighbor_state_str = self.list_2_str(neighbor_state_list)
+                        #print("ns_str = ", neighbor_state_str)
+                        next_gx = self.board.cost(c,r)
+                        next_hx = self.get_h_cost(neighbor_state_list)
+                        next_fx = next_gx + next_hx
 
-                    #if neighbor_board not in self.cost_so_far:
-                    #    self.cost_so_far[neighbor_board] = new_cost
-                    #    self.frontier.add
-                        
+                        new_cost = self.cost_so_far[current_state_str] + next_fx
 
-            print(neighbor_board)
-            sys.exit(1)
-            # Loop thrue board and find smallest costs
+                        #print("ns = ", neighbor_state_list, ", str = ", neighbor_state_str, "gx = ", next_gx, ", hx = ", next_hx, ", new_cost = ", new_cost)
 
+                        if neighbor_state_str not in self.cost_so_far or new_cost < self.cost_so_far[neighbor_state_str]:
+                            self.cost_so_far[neighbor_state_str] = new_cost
+                            self.frontier.add(new_cost, neighbor_state_str)
+                            self.came_from[neighbor_state_str] = current_state_str
 
 
 #####################
@@ -604,13 +721,21 @@ starting_board = parse_csv_file()
 # starting_board = makeup_board(5)
 
 
-#for queen in starting_board:
-#    print("Queen weight = %d, Queen row = %d, Queen col = %d" % (queen[0], queen[1], queen[2]))
 
 # n_queen = N_QueenChess(starting_board)
 # n_queen.display()
 # # n_queen.test()
 # #
+
+if __options__.algorithm == 1:
+    a_star = A_Star(n_queen, heuristic = __options__.heuristic)
+    a_star.expand()
+    a_star.results()
+else:
+    hc = Hillclimbing(n_queen_board = n_queen, heuristic = __options__.heuristic)
+    hc.expand(n_queen)
+    hc.display_result()
+
 # hc_h1 = Hillclimbing(n_queen_board = n_queen, heuristic = "h1")
 # hc_h1.expand(n_queen)
 # hc_h1.display_result()
@@ -619,10 +744,3 @@ starting_board = parse_csv_file()
 # hc_h2 = Hillclimbing(n_queen_board = n_queen, heuristic = "h2")
 # hc_h2.expand(n_queen)
 # hc_h2.display_result()
-
-
-
-n_queen.display()
-
-a_star = A_Star(n_queen_board = n_queen, heuristic = "h1")
-a_star.expand()
