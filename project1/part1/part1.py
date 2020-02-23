@@ -864,9 +864,9 @@ if __options__.algorithm == 1:
     a_star.expand()
     a_star.results()
 else:
-    # hc = Hillclimbing(n_queen_board = n_queen, heuristic = __options__.heuristic)
-    # hc.expand(n_queen)
-    # hc.display_result(n_queen)
+    hc = Hillclimbing(n_queen_board = n_queen, heuristic = __options__.heuristic)
+    hc.expand(n_queen)
+    hc.display_result(n_queen)
 
 
     # '''
