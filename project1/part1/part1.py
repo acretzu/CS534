@@ -542,9 +542,19 @@ class PriorityQueue:
         self.queue = []
 
     def add(self, cost, state):
+        '''
+           Adds a tuple (cost, state) to the list where lower costs are at the front of the queue.
 
+           Inputs:
+              Cost - Integer cost of the state
+              State - Space-separated string representing the new state of queens
+           Outputs:
+              None
+        '''
+        # Append tuple if list is empty
         if len(self.queue) == 0:
             self.queue.append( (cost, state) )
+            # Debug
             #print("PriorityQueue is empty. Adding at the end")
         else:
             # Loop thru queue and compare costs
@@ -553,33 +563,83 @@ class PriorityQueue:
                 qcost = pair[0]
                 if cost < qcost:
                     self.queue.insert(i, (cost, state))
+                    # Debug
                     #print("PriorityQueue inserting at position ", i, ", cost = ", cost, ", qcost = ", qcost, ", state = ", state)
                     break
                 elif i == len(self.queue)-1:
                     self.queue.append( (cost, state) )
+                    # Debug
                     #print("PriorityQueue inserting at the end")
                     break
                 i += 1
 
     def remove(self):
+        '''
+           Removes tuple from the front of the queue
+
+           Inputs:
+              None
+           Outputs:
+              Tuple (cost, state)
+        '''
         return self.queue.pop(0)
 
     def isEmpty(self):
+        '''
+           Returns 1 if queue is empty, else 0
+
+           Inputs:
+              None
+           Outputs:
+              1 if queue is empty, else 0
+        '''
         return 1 if len(self.queue) == 0 else 0
 
     def contains(self, s):
+        '''
+           Returns 1 space-seperated string of queens exists in the queue
+
+           Inputs:
+              Space-separated string of queens
+           Outputs:
+              1 if input string exists in the queue, else 0
+        '''
         for pair in self.queue:
             if pair[1] == s:
                 return 1
         return 0
 
     def get_cost(self, i):
+        '''
+           Returns the cost of the tuple at queue position i.
+
+           Inputs:
+              None
+           Outputs:
+              The cost of the tuple at queue position i.
+        '''
         return self.queue[i][0]
 
     def get_state(self, i):
+        '''
+           Returns the state of the tuple at queue position i.
+
+           Inputs:
+              None
+           Outputs:
+              The state of tuple at queue position i.
+        '''
         return self.queue[i][1]
 
     def print(self):
+        '''
+           Prints the priority queue. Mainly used for debug
+
+           Inputs:
+              None
+           Outputs:
+              None
+        '''
         print("Printing Frontier:")
         for pair in self.queue:
             print("Cost = ", pair[0], ", State = ", pair[1])
@@ -609,9 +669,25 @@ class A_Star:
         self.total_cost = 0
 
     def list_2_str(self, l):
+        '''
+           Converts a list of integers into a space-separated string.
+
+           Inputs:
+              List of integers.
+           Outputs:
+              Space-separated string.
+        '''
         return "".join(str(x)+" " for x in l)
 
     def str_2_list(self, s):
+        '''
+           Converts a space-separated string into a list of integers.
+
+           Inputs:
+              Space-separated string.
+           Outputs:
+              List of integers.
+        '''
         return [int(i) for i in s.split()]
 
 
@@ -646,6 +722,14 @@ class A_Star:
         return n_attack
 
     def get_h_cost(self, state):
+        '''
+           Utility function which uses the n_queens_board to calculate the heuristic given the state (columns) of queens
+
+           Inputs:
+              List of queens per column. Position 0 = left-most queeen.
+           Outputs:
+              Integer heuristic cost.
+        '''
         cost = 0
         if self.h == "h1":
             cost = self.board.calculate_h1(state, self.board.weights, self.board.size)
@@ -655,6 +739,14 @@ class A_Star:
 
 
     def print_path_to_goal(self):
+        '''
+           Prints the move from the starting board to the ending (goal) board
+
+           Inputs:
+              None
+           Outputs:
+              None
+        '''
         current = self.goal_state
         path = []
         while current != self.start_state:
@@ -671,6 +763,14 @@ class A_Star:
 
 
     def results(self):
+        '''
+           Prints the result of A*. Must only be called after execution of expand()
+
+           Inputs:
+              None
+           Outputs:
+              None
+        '''
         self.print_path_to_goal()
         print("Heuristic        =", self.h)
         print("Total time (s)   =", round(self.stop_time - self.start_time, 3))
@@ -680,21 +780,37 @@ class A_Star:
         print("Branching factor =", round(self.nodes_expanded / self.solution_length, 2))
 
     def expand(self):
+        '''
+           Executes the A* algorithm.
 
+           Inputs:
+              None
+           Outputs:
+              None
+        '''
         while not self.frontier.isEmpty():
+            # Debug
             #self.frontier.print()
+
             # Remove head of frontier
             current_state_str = self.frontier.remove()[1]
             current_state_list = self.str_2_list(current_state_str)
+
+            # Debug
             #print("Current State = ", current_state_str)
 
+            # Prints to prove H2 is not admissible
+            #current_hx = self.get_h_cost(current_state_list)
+            #print("current_hx = ", current_hx)
+
             self.board.update_board(current_state_list)
+            # Debug
             #self.board.display()
 
-            # Exit if solution was found
+            # Debug
             #print("Attacking = ", self.find_attacking_queens(current_state_list))
+            # Exit if solution was found
             if self.find_attacking_queens(current_state_list) == 0:
-                #print("Total cost = ", self.cost_so_far[current_state_str])
                 self.total_cost = self.cost_so_far[current_state_str]
                 self.goal_state = current_state_str
                 self.stop_time = time.perf_counter()
@@ -709,19 +825,21 @@ class A_Star:
 
                     # If the queen is not in the current state
                     if queen_in_col != r:
+                        # Create neighbor from current state, but change the row
                         neighbor_state_list = current_state_list.copy()
                         neighbor_state_list[c] = r
-                        #print("ns = ", neighbor_state_list)
                         neighbor_state_str = self.list_2_str(neighbor_state_list)
-                        #print("ns_str = ", neighbor_state_str)
+
+                        # Calculate A* parameters
                         next_gx = self.board.cost(c,r)
                         next_hx = self.get_h_cost(neighbor_state_list)
                         next_fx = next_gx + next_hx
-
                         new_cost = self.cost_so_far[current_state_str] + next_fx
 
+                        # Debug
                         #print("ns = ", neighbor_state_list, ", str = ", neighbor_state_str, "gx = ", next_gx, ", hx = ", next_hx, ", new_cost = ", new_cost)
 
+                        # Update frontier
                         if neighbor_state_str not in self.cost_so_far or new_cost < self.cost_so_far[neighbor_state_str]:
                             self.cost_so_far[neighbor_state_str] = new_cost
                             self.frontier.add(new_cost, neighbor_state_str)
@@ -736,7 +854,7 @@ __options__ = parse_cmd_line_options()
 starting_board = parse_csv_file()
 
 
-# n_queen = N_QueenChess(starting_board)
+n_queen = N_QueenChess(starting_board)
 # n_queen.display()
 # n_queen.test()
 # #
