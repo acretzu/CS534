@@ -955,7 +955,7 @@ if __options__.algorithm == 'GA':
     elite_percent = 5  # percent
     generations = 100
     mutation_chance = 3  # percent
-    time_limit = 7  # seconds
+    time_limit = 5  # seconds
     map_pool = []
     parents = []
     new_map_pool = []
