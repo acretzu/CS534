@@ -10,6 +10,7 @@ import random
 import time
 import sys
 import copy
+import pandas as pd
 
 
 
@@ -25,7 +26,7 @@ starting_board = []
 def parse_cmd_line_options():
     parser = OptionParser()
     parser.add_option("--e", action="store", type="string", dest="heuristic", default="h1", help="The heuristic.")
-    parser.add_option("--a", action="store", type="int", dest="algorithm", default=1, help="The algorithm.")
+    parser.add_option("--a", action="store", type="int", dest="algorithm", default=2, help="The algorithm.")
     parser.add_option("--f", action="store", type="string", dest="csv", default="heavy_queens_board.csv", help="The local path to the CSV file.")
 
     (options, args) = parser.parse_args()
@@ -283,13 +284,13 @@ class N_QueenChess:
                 if self.columns[j] != i:
                     next_move = copy.deepcopy(self.columns)
                     next_move[j] = i
-                    h2_board[i, j] = calculate_h2(next_move, self.weights, self.size)
+                    h2_board[i, j] = self.calculate_h2(next_move, self.weights, self.size)
 
                 else:
                     # let's assume the current h2 is infinte, then we can get the min of neighbours
                     h2_board[i, j] = float("inf")
 
-        return h2_board, calculate_h2(self.columns, self.weights, self.size)
+        return h2_board, self.calculate_h2(self.columns, self.weights, self.size)
 
     def attacks(self):
         '''
@@ -358,7 +359,7 @@ class Hillclimbing:
         self.total_start_time = time.time()
         self.start_time = time.time()
 
-        print("Start Game with " + heuristic)
+        print("Start Game using Hill Climbing with " + heuristic)
         print("----------------------------------------------")
 
         print("Start board state")
@@ -429,7 +430,7 @@ class Hillclimbing:
                 n_queen_board.play(queen_to_move, move_to_where)
 
                 # add the node
-                self.node.append(n_queen_board.columns)
+                self.node.append(copy.deepcopy(n_queen_board.columns))
 
                 # update the number of sideway moves
                 self.sideway += 1
@@ -493,6 +494,9 @@ class Hillclimbing:
         # check if game is over
         while n_queen_board.attacks() != 0:
 
+            if (time.time() - self.total_start_time) > (10*n_queen_board.size):
+                break
+
             # if game is not over, check which heuristic is used to play game
 
             # is heuristic 1?
@@ -507,12 +511,26 @@ class Hillclimbing:
                 h2_board, h2_self = n_queen_board.h2()
                 play_rule(h2_board, h2_self)
 
-    def display_result(self):
-        # print("The number of nodes expanded: %f" )  ==> waiting for TA response
-        print("It takes %f to finish the game" %(time.time() - self.total_start_time))
-        # print("The effective branching factor: ")  ===> waiting for TA response
-        print("The cost to solve the puzzle: %i" %self.total_cost())
-        # print("The sequence of moves needed to solve the puzzle:") ===> waiting for TA response
+    def display_result(self, n_queen_board):
+
+        print("Heuristic        =", self.h)
+        print("Total time (s)   =", (time.time() - self.total_start_time))
+        print("Total cost       =", self.total_cost)
+        print("Nodes expanded   =", len(self.node)-1)
+        print("Moves to solve   =", len(self.node)-1)
+        print("Branching factor =", 1)
+        for i in self.node:
+            for column in range(n_queen_board.size):
+                for row in range(n_queen_board.size):
+                    if column == i[row]:
+                        print(n_queen_board.weights[row], end=' ')
+                    else:
+                        print('.', end=' ')
+                print()
+            print("---------------------------------")
+
+        return [n_queen.size, (time.time() - self.total_start_time), self.total_cost, len(self.node)-1, len(self.node)-1, 1, n_queen_board.attacks()]
+
 
 
 ###############################################
@@ -714,17 +732,13 @@ class A_Star:
 # Script Start
 #####################
 
-# sys.setrecursionlimit(10000)
-
 __options__ = parse_cmd_line_options()
 starting_board = parse_csv_file()
-# starting_board = makeup_board(5)
-
 
 
 # n_queen = N_QueenChess(starting_board)
 # n_queen.display()
-# # n_queen.test()
+# n_queen.test()
 # #
 
 if __options__.algorithm == 1:
@@ -732,15 +746,27 @@ if __options__.algorithm == 1:
     a_star.expand()
     a_star.results()
 else:
-    hc = Hillclimbing(n_queen_board = n_queen, heuristic = __options__.heuristic)
-    hc.expand(n_queen)
-    hc.display_result()
+    # hc = Hillclimbing(n_queen_board = n_queen, heuristic = __options__.heuristic)
+    # hc.expand(n_queen)
+    # hc.display_result(n_queen)
 
-# hc_h1 = Hillclimbing(n_queen_board = n_queen, heuristic = "h1")
-# hc_h1.expand(n_queen)
-# hc_h1.display_result()
-# #
-# n_queen = N_QueenChess(starting_board)
-# hc_h2 = Hillclimbing(n_queen_board = n_queen, heuristic = "h2")
-# hc_h2.expand(n_queen)
-# hc_h2.display_result()
+
+    # '''
+    # below for analysis
+    # '''
+    # result = []
+    #
+    # for s in range(6):
+    #     for i in range(5):
+    #         for sd in range(4):
+    #             starting_board = makeup_board(s+4)
+    #             n_queen = N_QueenChess(starting_board)
+    #             hc = Hillclimbing(n_queen_board=n_queen, heuristic=__options__.heuristic, time_limit= 1, sideway_limit=sd)
+    #             hc.expand(n_queen)
+    #
+    #             result.append(hc.display_result(n_queen).append(s))
+    #
+    # result_pd = pd.DataFrame(result,
+    #                          columns=['Board Size', 'Total time (s)', '"Total cost', 'Nodes expanded', 'Moves to solve', 'Branching factor', 'n_attacks', 'sideway_limits'])
+    #
+    # result_pd.to_csv("result_hc_h1.csv")

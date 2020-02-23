@@ -10,6 +10,7 @@ import random
 import numpy as np
 import time
 import copy
+import pandas as pd
 
 __options__ = None
 starting_map = []
@@ -24,7 +25,7 @@ RESIDENTIAL_MAX = 0
 #
 def parse_cmd_line_options():
     parser = OptionParser()
-    parser.add_option("--f", action="store", type="string", dest="csv", default="urban_1.txt",
+    parser.add_option("--f", action="store", type="string", dest="csv", default="urban_3.txt",
                       help="The local path to the CSV file.")
     # parser.add_option("--e", action="store", type="string", dest="algorithm", default="GA", help="The algorithm.")
     parser.add_option("--e", action="store", type="string", dest="algorithm", default="HC", help="The algorithm.")
@@ -699,7 +700,7 @@ class Map:
 
 class Hillclimbing:
 
-    def __init__(self, time_limit=10):
+    def __init__(self, time_limit=10, t_de_rate = 10):
         # self.h = heuristic
         # self.total_cost = 0
         # self.restart = 0
@@ -711,12 +712,13 @@ class Hillclimbing:
         self.current_score = -float("inf")
         self.next_nodes = []
         self.next_nodes_score = []
+        self.t_de_rate = t_de_rate
 
     def expand_node(self, init_map):
 
         def simulated_annealing(l_cur, l_next, t_delta):
 
-            T = math.log10(t_delta)
+            T = math.log(t_delta, base=self.t_de_rate)
 
             p = math.e**(- abs(l_next - l_cur)/T)
 
@@ -845,22 +847,10 @@ class Hillclimbing:
                     else:
                         None
 
-            max_score = max(self.next_nodes_score)
+            try:
+                max_score = max(self.next_nodes_score)
 
-            if max_score > self.current_score:
-
-                choice_map = [self.next_nodes[i] for i, e in enumerate(self.next_nodes_score) if e == max_score]
-
-                init_map.map = np.array(choice_map[random.randint(1, len(choice_map)) - 1])
-
-                self.next_nodes = []
-                self.next_nodes_score = []
-
-            else:
-
-                is_continue = simulated_annealing(max_score , self.current_score, t_delta = time.time() - self.start_time)
-
-                if is_continue:
+                if max_score > self.current_score:
 
                     choice_map = [self.next_nodes[i] for i, e in enumerate(self.next_nodes_score) if e == max_score]
 
@@ -871,16 +861,32 @@ class Hillclimbing:
 
                 else:
 
-                    init_map.map = init_map.starting_map.copy()
-                    init_map.score = 0
-                    init_map.industrial = 0
-                    init_map.commercial = 0
-                    init_map.residential = 0
-                    init_map.place_all()
+                    is_continue = simulated_annealing(max_score , self.current_score, t_delta = time.time() - self.start_time)
 
-                    self.current_score = -float('inf')
-                    self.next_nodes = []
-                    self.next_nodes_score = []
+                    if is_continue:
+
+                        choice_map = [self.next_nodes[i] for i, e in enumerate(self.next_nodes_score) if e == max_score]
+
+                        init_map.map = np.array(choice_map[random.randint(1, len(choice_map)) - 1])
+
+                        self.next_nodes = []
+                        self.next_nodes_score = []
+
+                    else:
+
+                        init_map.map = init_map.starting_map.copy()
+                        init_map.score = 0
+                        init_map.industrial = 0
+                        init_map.commercial = 0
+                        init_map.residential = 0
+                        init_map.place_all()
+
+                        self.current_score = -float('inf')
+                        self.next_nodes = []
+                        self.next_nodes_score = []
+
+            except:
+                print("You cannot put any zone on the site")
 
     def display_result(self):
 
@@ -894,10 +900,12 @@ class Hillclimbing:
 
             print("Best Score: \n", max_final_score, "\n")
             print("Best Map:")
-            print(choice_map[i])
+            print(np.array(choice_map[i]))
             print("At %f that score was first achieved" %choice_time[i])
-            print("At No.%i node that score was first achieved" %choice[i])
+            print("At No.%i node that score was first achieved" % choice[i])
             print("Total Time: ", time.time() - self.start_time)
+
+        return [max_final_score, np.array(choice_map[i]), choice_time[i], choice[i], time.time() - self.start_time, self.t_de_rate]
 
 
 #####################
@@ -1083,3 +1091,37 @@ elif __options__.algorithm == 'HC':
     hc.expand_node(init_map)
     hc.display_result()
 
+
+    """
+    below for analysis
+    """
+
+    # result = []
+
+    # for t in [0.1, 0.25, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9 , 10 ]:
+    #
+    #     init_map = Map(starting_map)
+    #     hc = Hillclimbing(t)
+    #     hc.expand_node(init_map)
+    #
+    #     result.append(hc.display_result())
+    #
+    #
+    # result_pd = pd.DataFrame(result,
+    #                          columns=['Best Score', 'Best Map', 'First time of the best', 'First node of the best', 'Total time'])
+    #
+    # result_pd.to_csv("result_hc_urban_2.csv")
+    #
+    # for td in range(9):
+    #     for i in range(100):
+    #         init_map = Map(starting_map)
+    #         hc = Hillclimbing(1, t_de_rate=td+2)
+    #         hc.expand_node(init_map)
+    #
+    #         result.append(hc.display_result())
+    #
+    #
+    # result_pd = pd.DataFrame(result,
+    #                          columns=['Best Score', 'Best Map', 'First time of the best', 'First node of the best', 'Total time', 'td'])
+    #
+    # result_pd.to_csv("result_hc_urban_2_log.csv")
