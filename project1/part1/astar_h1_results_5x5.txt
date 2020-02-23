@@ -28,4 +28,4 @@ Total time (s)   = 0.071
 Total cost       = 31
 Nodes expanded   = 162
 Moves to solve   = 3
-Branching factor = 40.5
+Branching factor = 5.45
