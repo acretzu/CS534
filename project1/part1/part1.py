@@ -25,7 +25,7 @@ starting_board = []
 #
 def parse_cmd_line_options():
     parser = OptionParser()
-    parser.add_option("--e", action="store", type="string", dest="heuristic", default="h1", help="The heuristic.")
+    parser.add_option("--e", action="store", type="string", dest="heuristic", default="h2", help="The heuristic.")
     parser.add_option("--a", action="store", type="int", dest="algorithm", default=2, help="The algorithm.")
     parser.add_option("--f", action="store", type="string", dest="csv", default="heavy_queens_board.csv", help="The local path to the CSV file.")
 
@@ -348,7 +348,7 @@ class N_QueenChess:
 
 class Hillclimbing:
 
-    def __init__(self, n_queen_board, heuristic, time_limit=0.1, sideway_limit=3):
+    def __init__(self, n_queen_board, heuristic, time_limit=10, sideway_limit=3):
 
         self.h = heuristic
         self.total_cost = 0
@@ -466,6 +466,7 @@ class Hillclimbing:
 
                 # add the node
                 self.node.append(copy.deepcopy(n_queen_board.columns))
+                self.total_node.append(copy.deepcopy(n_queen_board.columns))
 
                 """
                 Just for visualization for the whole process
