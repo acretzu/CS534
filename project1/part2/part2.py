@@ -726,7 +726,7 @@ class Hillclimbing:
 
         init_map.place_all()
 
-
+        # if there is still time left, restart
         while time.time() < (self.start_time + self.time_limit):
 
             # find all the scores of all the possible options including {check, move, add}
@@ -1090,7 +1090,7 @@ elif __options__.algorithm == 'HC':
     """
 
     # result = []
-
+    #
     # for t in [0.1, 0.25, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9 , 10 ]:
     #
     #     init_map = Map(starting_map)
@@ -1103,7 +1103,7 @@ elif __options__.algorithm == 'HC':
     # result_pd = pd.DataFrame(result,
     #                          columns=['Best Score', 'Best Map', 'First time of the best', 'First node of the best', 'Total time'])
     #
-    # result_pd.to_csv("result_hc_urban_2.csv")
+    # result_pd.to_csv("result_hc_urban_3.csv")
     #
     # for td in range(9):
     #     for i in range(100):
