@@ -354,6 +354,7 @@ class Hillclimbing:
         self.total_cost = 0
         self.sideway = 0
         self.node = [copy.deepcopy(n_queen_board.columns)]
+        self.total_node = [copy.deepcopy(n_queen_board.columns)]
         self.time_limit = time_limit
         self.sideway_limit = sideway_limit
         self.total_start_time = time.time()
@@ -431,6 +432,7 @@ class Hillclimbing:
 
                 # add the node
                 self.node.append(copy.deepcopy(n_queen_board.columns))
+                self.total_node.append(copy.deepcopy(n_queen_board.columns))
 
                 # update the number of sideway moves
                 self.sideway += 1
@@ -494,7 +496,7 @@ class Hillclimbing:
         # check if game is over
         while n_queen_board.attacks() != 0:
 
-            if (time.time() - self.total_start_time) > (10*n_queen_board.size):
+            if (time.time() - self.total_start_time) > (10):
                 break
 
             # if game is not over, check which heuristic is used to play game
@@ -516,9 +518,9 @@ class Hillclimbing:
         print("Heuristic        =", self.h)
         print("Total time (s)   =", (time.time() - self.total_start_time))
         print("Total cost       =", self.total_cost)
-        print("Nodes expanded   =", len(self.node)-1)
+        print("Nodes expanded   =", len(self.total_node)-1)
         print("Moves to solve   =", len(self.node)-1)
-        print("Branching factor =", 1)
+        print("Branching factor =", (len(self.total_node)-1)**(1/len(self.node)))
         for i in self.node:
             for column in range(n_queen_board.size):
                 for row in range(n_queen_board.size):
@@ -529,7 +531,8 @@ class Hillclimbing:
                 print()
             print("---------------------------------")
 
-        return [n_queen.size, (time.time() - self.total_start_time), self.total_cost, len(self.node)-1, len(self.node)-1, 1, n_queen_board.attacks()]
+        return [n_queen.size, (time.time() - self.total_start_time), self.total_cost, len(self.total_node)-1, len(self.node)-1,
+                (len(self.total_node)-1)**(1/len(self.node)), n_queen_board.attacks(), self.sideway_limit]
 
 
 
@@ -863,28 +866,40 @@ if __options__.algorithm == 1:
     a_star = A_Star(n_queen, heuristic = __options__.heuristic)
     a_star.expand()
     a_star.results()
+
 else:
     hc = Hillclimbing(n_queen_board = n_queen, heuristic = __options__.heuristic)
     hc.expand(n_queen)
     hc.display_result(n_queen)
 
 
-    # '''
-    # below for analysis
-    # '''
+    '''
+    below for analysis
+    '''
     # result = []
     #
-    # for s in range(6):
-    #     for i in range(5):
-    #         for sd in range(4):
+    # for s in range(7):
+    #     for i in range(10):
+    #         for sd in range(5):
     #             starting_board = makeup_board(s+4)
     #             n_queen = N_QueenChess(starting_board)
+    #
+    #             print("hill climbing")
     #             hc = Hillclimbing(n_queen_board=n_queen, heuristic=__options__.heuristic, time_limit= 1, sideway_limit=sd)
     #             hc.expand(n_queen)
     #
-    #             result.append(hc.display_result(n_queen).append(s))
+    #             # print("A*")
+    #             # n_queen = N_QueenChess(starting_board)
+    #             # a_star = A_Star(n_queen, heuristic=__options__.heuristic)
+    #             # a_star.expand()
+    #             # a_star.results()
+    #
+    # #             print("********************************************")
+    #
+    #             result.append(hc.display_result(n_queen))
     #
     # result_pd = pd.DataFrame(result,
     #                          columns=['Board Size', 'Total time (s)', '"Total cost', 'Nodes expanded', 'Moves to solve', 'Branching factor', 'n_attacks', 'sideway_limits'])
     #
-    # result_pd.to_csv("result_hc_h1.csv")
+    #
+    # result_pd.to_csv("result_hc_h1_1.csv")
