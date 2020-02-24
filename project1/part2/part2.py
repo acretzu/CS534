@@ -25,15 +25,15 @@ RESIDENTIAL_MAX = 0
 #
 def parse_cmd_line_options():
     parser = OptionParser()
-    parser.add_option("--f", action="store", type="string", dest="csv", default="urban_3.txt", help="The local path to the CSV file.")
+    parser.add_option("--f", action="store", type="string", dest="txt", default="urban_2.txt", help="The local path to the txt file.")
     # parser.add_option("--e", action="store", type="string", dest="algorithm", default="GA", help="The algorithm.")
-    parser.add_option("--e", action="store", type="string", dest="algorithm", default="GA", help="The algorithm.")
+    parser.add_option("--a", action="store", type="string", dest="algorithm", default="GA", help="The algorithm.")
 
     (options, args) = parser.parse_args()
 
     # Check that all options have been provided
-    if not os.path.isfile(options.csv):
-        print("Execution requires path to CSV file.")
+    if not os.path.isfile(options.txt):
+        print("Execution requires path to txt file.")
         sys.exit(1)
 
     if not options.algorithm:
@@ -47,12 +47,12 @@ def parse_cmd_line_options():
 # Open the CSV file and copy map
 #
 def parse_csv_file_map():
-    file_ptr = open(__options__.csv, "r")
+    file_ptr = open(__options__.txt, "r")
     ret_array = []
 
     # Error out if we can't open the file
     if not file_ptr:
-        print("Unable to open file: %s" % __options__.csv)
+        print("Unable to open file: %s" % __options__.txt)
         sys.exit(1)
 
     # Get the first three values for industrial, commercial, residential maximums
@@ -71,12 +71,12 @@ def parse_csv_file_map():
 # Open the CSV file and get the maximums
 #
 def parse_csv_file_maximums():
-    file_ptr = open(__options__.csv, "r")
+    file_ptr = open(__options__.txt, "r")
     loc_maximums = []
 
     # Error out if we can't open the file
     if not file_ptr:
-        print("Unable to open file: %s" % __options__.csv)
+        print("Unable to open file: %s" % __options__.txt)
         sys.exit(1)
 
     # Get the first three values for industrial, commercial, residential maximums
@@ -641,15 +641,6 @@ class Map:
 
         print(output)
 
-    def print(self):
-
-        """
-            Print the map in block format
-
-        """
-
-        print(self.map)
-
     def remove(self, x, y):
 
         """
@@ -955,10 +946,11 @@ if __options__.algorithm == 'GA':
     elite_percent = 5  # percent
     generations = 100
     mutation_chance = 3  # percent
-    time_limit = 5  # seconds
+    time_limit = 10  # seconds
     map_pool = []
     parents = []
     new_map_pool = []
+    best_score = 0
 
     # Initial population
     for i in range(pool_size):
@@ -971,6 +963,11 @@ if __options__.algorithm == 'GA':
 
         # Sort the pool
         map_pool.sort(key=get_score)
+
+        # Record best score
+        if best_score < map_pool[len(map_pool)-1].score:
+            best_score = map_pool[len(map_pool)-1].score
+            best_score_time = time.time()
 
         # Shift onto 0
         offset = map_pool[0].score
@@ -1066,6 +1063,7 @@ if __options__.algorithm == 'GA':
     print("Best Score: \n", map_pool[pool_size - 1].score, "\n")
     print("Best Map:")
     map_pool[pool_size - 1].print_fancy()
+    print("Best Map Achieved At: ", time.time() - best_score_time)
     print("Total Time: ", time.time() - start_time)
 
 
