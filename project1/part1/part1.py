@@ -755,7 +755,7 @@ class A_Star:
         path.append(self.start_state)
         path.reverse()
 
-        print("A* algorithm path to goal:")
+        print("A* algorithm - Moves from start to goal:")
         for state in path:
             self.solution_length += 1
             self.board.update_board(self.str_2_list(state))
@@ -777,7 +777,7 @@ class A_Star:
         print("Total cost       =", self.total_cost)
         print("Nodes expanded   =", self.nodes_expanded)
         print("Moves to solve   =", (self.solution_length - 1))
-        print("Branching factor =", round(self.nodes_expanded / self.solution_length, 2))
+        print("Branching factor =", round(self.nodes_expanded ** (1/self.solution_length), 3))
 
     def expand(self):
         '''
