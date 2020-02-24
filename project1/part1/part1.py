@@ -496,9 +496,6 @@ class Hillclimbing:
         # check if game is over
         while n_queen_board.attacks() != 0:
 
-            if (time.time() - self.total_start_time) > (10):
-                break
-
             # if game is not over, check which heuristic is used to play game
 
             # is heuristic 1?
