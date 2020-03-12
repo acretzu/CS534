@@ -63,4 +63,71 @@ print("file = ", file_name)
 print("num_groups = ", num_groups)
 for xy in data:
     print(xy[0], ", ", xy[1])
+# print(type(data))
+
+
+# Logics
+# 1) start with k randomly placed Guassians (mean, standard deviation)
+# 2) for each point: P(ki|xi) = does it look like it came from?
+# 3) adjust (mean, standard deviation) to fit the points assigned to them
+
+
+def initial_starting_centers(data, k):
+
+
+    """
+    initialize starting centers
+
+    :param data: raw data
+    :param k: k clusters
+    :return k_center: center points [[], [], [], ...]
+    """
+
+
+
+def initial_avg_std(data, k_center):
+
+    """
+    initialize mean and std for each cluster
+
+    :param data:
+    :param k_center:
+    :return k_avg_std: mean and std for each cluster [[avg_0, st_0], [avg_1, st_1], [avg_2, st_2] ...]
+    """
+
+
+
+
+
+def expectation(data, cluster_prob):
+
+    """
+    adjust (mean, standard deviation) to fit the points assigned to them
+
+    :param data:
+    :param cluster_prob: the probability of each point assigned to each cluster
+    :return k_avg_std: mean and std for each cluster
+    """
+
+
+
+
+
+def maximization(data, k_avg_std):
+
+    """
+    for each point: P(ki|xi) = does it look like it came from?
+
+    :param data:
+    :param k_avg_std:
+    :return cluster_prob: the probability of each point assigned to each cluster
+                            [[P(k1|x1), P(k2|x1), P(k3|x1), ...],
+                             [P(k1|x2), P(k2|x2), P(k3|x2), ...],
+                             ......]
+    """
+
+
+
+
+
 
