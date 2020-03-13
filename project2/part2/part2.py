@@ -12,6 +12,10 @@ import copy
 import pandas as pd
 
 
+
+
+
+
 #
 # Open the CSV file and get data
 # Format: <x float>, <y float>
@@ -34,6 +38,26 @@ def parse_csv_file(path_to_file):
         
     file_ptr.close()
     return ret_array
+
+
+#
+# start -> expectation -> maximization -> is_converged -- yes? --> done
+#  ^                                            | 
+#  |------------------- no? --------------------|
+#
+
+def start():
+    return 0
+
+def expectation():
+    return 0
+
+def maximization():
+    return 0
+
+def is_converged():
+    return 0
+
 
 
 
