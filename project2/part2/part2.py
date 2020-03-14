@@ -123,7 +123,7 @@ def initial_avg_std(data, k_center):
 
 
 
-def expectation(data, cluster_prob):
+def maximization(data, cluster_prob):
 
     """
     adjust (mean, standard deviation) to fit the points assigned to them
@@ -137,13 +137,14 @@ def expectation(data, cluster_prob):
 
 
 
-def maximization(data, k_avg_std):
+def expectation(data, k_center, k_avg_std):
 
     """
     for each point: P(ki|xi) = does it look like it came from?
 
     :param data:
-    :param k_avg_std:
+    :param k_center: center points [[], [], [], ...]
+    :param k_avg_std: mean and std for each cluster [[avg_0, st_0], [avg_1, st_1], [avg_2, st_2] ...]
     :return cluster_prob: the probability of each point assigned to each cluster
                             [[P(k1|x1), P(k2|x1), P(k3|x1), ...],
                              [P(k1|x2), P(k2|x2), P(k3|x2), ...],
