@@ -102,6 +102,7 @@ def initial_starting_centers(data, k):
 
 
 def maximization(data, cluster_prob):
+
     """
     adjust (mean, standard deviation) to fit the points assigned to them
 
@@ -128,19 +129,26 @@ def maximization(data, cluster_prob):
     # number of features
     m = len(data[0])
 
+    k_cov = []
+
     # using numpy
     cluster_prob_np = np.array(cluster_prob)
     data_np = np.array(data)
 
     # update the k centers
-    k_center_np = np.dot(cluster_prob_np.T, data_np) / cluster_prob_np.sum(axis=0).T
+    k_center_np = np.dot(cluster_prob_np.T, data_np) / cluster_prob_np.sum(axis=0).reshape(1, 2).T
 
     # update the cov
-    # TODO
+    for ki in range(k):
+        ki_cov = np.dot(np.dot((data - k_center_np[ki]).T, np.diag(cluster_prob_np[:, ki])),
+                        (data - k_center_np[ki]))
+        ki_cov_normalize = ki_cov / cluster_prob_np[:, ki].sum()
+        ki_cov_list = ki_cov_normalize.tolist()
+
+        k_cov.append(ki_cov_list)
 
     # back to list
-    k_center = k_center_np.tolis()
-    k_cov = k_cov_np.list()
+    k_center = k_center_np.tolist()
 
     return k_center, k_cov
 
