@@ -33,61 +33,22 @@ def parse_csv_file(path_to_file):
     row = 0
     for line in file_ptr:
         csv_line = line.split(",")
-        print("csv 0 = ", csv_line[0], "csv 1 = ", csv_line[1])
+        #print("csv 0 = ", csv_line[0], "csv 1 = ", csv_line[1])
         ret_array.append( (float(csv_line[0].strip()), float(csv_line[1].strip())) )
         
     file_ptr.close()
     return ret_array
 
-
-#
-# start -> expectation -> maximization -> is_converged -- yes? --> done
-#  ^                                            | 
-#  |------------------- no? --------------------|
-#
-
-def start():
-    return 0
-
-def expectation():
-    return 0
-
-def maximization():
-    return 0
-
-def is_converged():
-    return 0
+#####################################################################################
 
 
+class EM_Data:
+    def __init__(self, d):
+        self.data = d
+        self.cluster_prob = {}
+        self.cluster = []
+        self.loglikihood = []
 
-
-#####################
-# Script Start
-#####################
-
-# Default values
-file_name = "sample_em_data.csv"
-num_groups = 0
-
-# File is arg1
-if len(sys.argv) >= 2:
-    file_name = sys.argv[1]
-
-# Groups is arg2
-if len(sys.argv) >= 3:
-    file_name = sys.argv[1]
-    num_groups = sys.argv[2]
-
-# Parse CSV
-data = parse_csv_file(file_name)
-
-
-# Debug print
-print("file = ", file_name)
-print("num_groups = ", num_groups)
-for xy in data:
-    print(xy[0], ", ", xy[1])
-# print(type(data))
 
 
 # Logics
@@ -132,12 +93,12 @@ def maximization(data, cluster_prob):
     :param cluster_prob: the probability of each point assigned to each cluster
     :return k_avg_std: mean and std for each cluster
     """
+    
 
 
 
 
-
-def expectation(data, k_center, k_avg_std):
+def expectation():
 
     """
     for each point: P(ki|xi) = does it look like it came from?
@@ -150,6 +111,53 @@ def expectation(data, k_center, k_avg_std):
                              [P(k1|x2), P(k2|x2), P(k3|x2), ...],
                              ......]
     """
+    
+    
+
+def initialize_probabilities():
+
+    probs = []
+    
+    for xy in data:
+        num = random.uniform(0,1)
+        #print("prob = ", num)
+        probs.append(num)
+        
+    return probs
+    
+
+#####################
+# Script Start
+#####################
+
+# Default values
+file_name = "sample_em_data.csv"
+num_groups = 0
+
+# File is arg1
+if len(sys.argv) >= 2:
+    file_name = sys.argv[1]
+
+# Groups is arg2
+if len(sys.argv) >= 3:
+    file_name = sys.argv[1]
+    num_groups = int(sys.argv[2])
+
+# Parse CSV
+#data = parse_csv_file(file_name)
+data = EM_Data(parse_csv_file(file_name))
+probabilities = initialize_probabilities()
+    
+
+# Debug print
+#print("file = ", file_name)
+#print("num_groups = ", num_groups)
+#for xy in data:
+#    print(xy[0], ", ", xy[1])
+#print(len(data))
+#print(type(data))
+
+
 
 
 
