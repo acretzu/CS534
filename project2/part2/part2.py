@@ -236,9 +236,6 @@ if len(sys.argv) >= 3:
 data = parse_csv_file(file_name)
 
 
-    
-#em_data = EM_Data(parse_csv_file(file_name), num_clusters)
-#probabilities = initialize_probabilities()
 #maximization()
 #expectation()
 
