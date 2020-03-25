@@ -195,21 +195,10 @@ def expectation(data, k_center, k_cov):
                            [P(k1|x2), P(k2|x2), P(k3|x2), ...],
                             ......]
     """
-    # Get number of clusters
-    clusters = len(k_center[0])
-
-    # Create a 2d array: [cluster][data_position] = prob
-    cluster_prob = np.array(cluster_prob, shape(c, len(data)))
-    
-    # Update the expectation (cluster_prob)
-    for c in range(clusters):
-        for d in len(data):
-        
-            # Multiply cluster variance by data
-            cluster_prob[c][d] = data[d] * k_cov[c, d]            
-
-    return cluster_prob_np
-               
+    size = len(k_center)
+    a = 1 / ( ((2 * np.pi) ** (size/2)) * (np.linalg.det(k_cov) ** (1/2)) )
+    b = (-1/2) * ((data - k_center).T.dot(np.linalg.inv(cov))).dot((data-k_center))
+    return float(a * np.exp(b))
     
     
 
