@@ -10,6 +10,7 @@ import time
 import sys
 import copy
 import pandas as pd
+import matplotlib.pyplot as plt
 
 
 
@@ -34,7 +35,8 @@ def parse_csv_file(path_to_file):
         ret_array.append( (float(csv_line[0].strip()), float(csv_line[1].strip())) )
 
     file_ptr.close()
-    return ret_array
+
+    return np.array(ret_array)
 
 ##############################################################################
 
@@ -55,7 +57,7 @@ def parse_csv_file(path_to_file):
 
 #         # Make up guesses for all probabilities
 #         self.prob_cluster = [0 for x in range(self.num_clusters)]
-        
+
 #         # Randomize cluster probabilities so that they add to 1
 #         temp = 1
 #         for c in range(self.num_clusters):
@@ -71,7 +73,7 @@ def parse_csv_file(path_to_file):
 #         # Debug print
 #         #for c in range(self.num_clusters):
 #         #    print(self.prob_cluster[c])
-                
+
 #         self.prob_data_given_cluster = [[random.uniform(0,1) for x in range(self.num_data)] for y in range(self.num_clusters)]
 
 #         # The likely cluster of each data point
@@ -82,7 +84,7 @@ def parse_csv_file(path_to_file):
 #         #    for d in range(self.num_data):
 #         #        print(self.prob_data_given_cluster[c][d])
 
-        
+
 ##############################################################################
 
 # Logics
@@ -109,14 +111,15 @@ def initial_starting_centers(data, k):
     """
 
     # number of features
-    m = len(data[0])
+    m = data.shape[1]
 
     # randomly choose centers from the data
-    k_center = random.sample(data, k=k)
-    
+    k_center = data[random.sample([i for i in range(data.shape[0])], k=k)]
+
     # initialize covariance as identity matrix
-    k_cov = [np.identity(m, dtype=np.float64).tolist() for i in range(k)]
-    
+    k_cov = np.array([np.identity(m, dtype=np.float64) for i in range(k)])
+
+
     return k_center, k_cov
 
 
@@ -140,17 +143,17 @@ def maximization(data, cluster_prob):
                     [[ , ], [, ]]
                     ...]
     """
-    
+
     # number of clusters
-    k = len(cluster_prob[0])
+    k = cluster_prob.shape[1]
     # number of data
-    n = len(data)
+    n = data.shape[0]
     # number of features
-    m = len(data[0])
+    m = data.shape[1]
 
 
-    cluster_prob = em_data.prob_data_given_cluster[0]
-    data = em_data.data
+    # cluster_prob = em_data.prob_data_given_cluster[0]
+    # data = em_data.data
 
     k_cov = []
 
@@ -159,19 +162,21 @@ def maximization(data, cluster_prob):
     data_np = np.array(data)
 
     # update the k centers    
-    k_center_np = np.dot(cluster_prob_np.T, data_np) / cluster_prob_np.sum(axis=0).reshape(1, 2).T
-    
+    k_center = np.dot(cluster_prob_np.T, data_np) / cluster_prob_np.sum(axis=0).reshape(1, k).T
+
     # update the cov
     for ki in range(k):
-        ki_cov = np.dot(np.dot((data - k_center_np[ki]).T, np.diag(cluster_prob_np[:, ki])),
-                        (data - k_center_np[ki]))
+        ki_cov = np.dot(np.dot((data - k_center[ki]).T, np.diag(cluster_prob_np[:, ki])),
+                        (data - k_center[ki]))
         ki_cov_normalize = ki_cov / cluster_prob_np[:, ki].sum()
         ki_cov_list = ki_cov_normalize.tolist()
 
         k_cov.append(ki_cov_list)
 
     # back to list
-    k_center = k_center_np.tolist()
+    # k_center = k_center_np.tolist()
+
+    k_cov = np.array(k_cov)
 
     return k_center, k_cov
 
@@ -195,22 +200,133 @@ def expectation(data, k_center, k_cov):
                            [P(k1|x2), P(k2|x2), P(k3|x2), ...],
                             ......]
     """
-    size = len(k_center)
-    a = 1 / ( ((2 * np.pi) ** (size/2)) * (np.linalg.det(k_cov) ** (1/2)) )
-    b = (-1/2) * ((data - k_center).T.dot(np.linalg.inv(cov))).dot((data-k_center))
-    return float(a * np.exp(b))
-    
-    
+
+    # number of features
+    size = k_center.shape[1]
+
+    # number of data
+    n = data.shape[0]
+
+    cluster_prob = []
+
+    for k in range(k_center.shape[0]):
+
+        a = 1 / (((2 * np.pi) ** (size / 2)) * (np.linalg.det(k_cov[k]) ** (1 / 2)))
+        b = (-1 / 2) * ((data - k_center[k]).dot(np.linalg.inv(k_cov[k]))).dot((data - k_center[k]).T)
+
+        cluster_prob_k = np.diagonal(a*np.exp(b))
+
+        cluster_prob.append(cluster_prob_k)
+
+    cluster_prob = np.array(cluster_prob).T
+
+    # (just remember to normalize the results in the end,
+    # since the point must belong to one of the clusters
+    # so probabilities have to sum to 1)
+    # from professor's reply
+
+    cluster_prob = cluster_prob / cluster_prob.sum(axis=1).reshape(n, 1)
+
+    return cluster_prob
+
+
+def get_loglikelihood(cluster_prob):
+
+    total_likelihood = np.log(cluster_prob).sum()
+
+    return total_likelihood
+
+def get_bic(total_likelihood, n_data, m_fea, k):
+
+    parameters = k*(m_fea + m_fea ** 2)
+
+    bic = -2*total_likelihood + math.log(n_data)*parameters
+
+    return bic
+
+
+def plot_loglikelihood(total_likelihood_list, plot_filename = "plot_ll.png"):
+
+    fig, ax = plt.subplots(nrows=1, ncols=1)  # create figure & 1 axis
+    fig.set_size_inches(8, 6)
+
+    ax.plot([i for i in range(len(total_likelihood_list))], total_likelihood_list)
+
+    plt.title('log-likelihood vs. # of iterations')
+    plt.xlabel('# of iterations')
+    plt.ylabel('log-likelihood')
+
+    fig.savefig(plot_filename)  # save the figure to file
+    plt.close(fig)
+
+
+# Main function
+def train_em(data, k, n_epochs):
+
+    k_center, k_cov = initial_starting_centers(data, k)
+
+    total_likelihood_list = []
+
+    # iterate
+    # TODO: add random restarts  (and sideways moves)
+    for e in range(n_epochs):
+
+        # expectation
+        cluster_prob = expectation(data, k_center, k_cov)
+
+        # maximization
+        k_center, k_cov = maximization(data, cluster_prob)
+
+        # record likelihood
+        total_likelihood = get_loglikelihood(cluster_prob)
+        total_likelihood_list.append(total_likelihood)
+
+    # save log-likelihood vs. # of iteration
+    plot_loglikelihood(total_likelihood_list, plot_filename="plot_ll/plot_ll_"+str(k)+".png")
+
+    return total_likelihood_list
+
+
+
+def plot_bic(bic_list, k_list, plot_filename = "plot_bic.png"):
+
+    fig, ax = plt.subplots(nrows=1, ncols=1)  # create figure & 1 axis
+    fig.set_size_inches(8, 6)
+
+    ax.plot(k_list, bic_list)
+
+    plt.title('BIC vs. # of clusters')
+    plt.xlabel('Number of Clusters')
+    plt.ylabel('BIC')
+
+    fig.savefig(plot_filename)  # save the figure to file
+    plt.close(fig)
+
+def determine_lowest_k_using_bic(data, k_range = 10):
+
+    bic_list = []
+    for ki in range(k_range):
+        total_likelihood_list = train_em(data, ki + 2, 20)
+
+        bic = get_bic(total_likelihood_list[-1], data.shape[0], data.shape[1], ki)
+        bic_list.append(bic)
+
+    k_list = [ki + 1 for ki in range(k_range)]
+
+    plot_bic(bic_list, k_list)
+
+
+
 
 #####################
 # Script Start
 #####################
 
-random.seed(3)
+# random.seed(3)
 
 # Default values
 file_name = "sample_em_data.csv"
-num_clusters = 0
+num_clusters = 5
 
 
 # File is arg1
@@ -224,6 +340,7 @@ if len(sys.argv) >= 3:
 
 data = parse_csv_file(file_name)
 
+determine_lowest_k_using_bic(data, k_range = 13)
 
 #maximization()
 #expectation()
