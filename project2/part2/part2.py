@@ -20,72 +20,39 @@ import matplotlib.pyplot as plt
 #
 def parse_csv_file(path_to_file):
     file_ptr = open(path_to_file, "r")
-    ret_array = []
+    
 
     # Error out if we can't open the file
     if not file_ptr:
         print("Unable to open file: %s" % __options__.csv)
         sys.exit(1)
 
-    # Loop thru each line (row) and extract wieght and col
-    row = 0
+    rows = 0
+    cols = -1
     for line in file_ptr:
+        rows += 1
+        if cols == -1:
+            cols = len(line.split(","))
+    file_ptr.seek(0)
+    
+    ret_array = np.empty((rows, cols), float)
+ 
+    row = 0    
+    for line in file_ptr:        
         csv_line = line.split(",")
-        #print("csv 0 = ", csv_line[0], "csv 1 = ", csv_line[1])
-        ret_array.append( (float(csv_line[0].strip()), float(csv_line[1].strip())) )
+        # Add each column
+        temp_arr = np.array([])
+        for col in range(cols):            
+            converted_line = (float(csv_line[col].strip()))
+            ret_array[row, col] = converted_line
+
+        row += 1
 
     file_ptr.close()
-
     return np.array(ret_array)
 
 ##############################################################################
 
-# class EM_Data:
-#     """
-#     A class containing all the necessary data structures for executing EM.
-#     data                    : list containing the real data (tuple)
-#     num_data                : amount of real data
-#     num_clusters            : number of clusters
-#     prob_cluster            : probability of a cluster
-#     prob_data_given_cluster : 2d-matrix representing the probability each data
-#                               belongs to a given cluster. [cluster][data] = %
-#     """
-#     def __init__(self, d, n):
-#         self.data = d
-#         self.num_data = len(d)
-#         self.num_clusters = n
-
-#         # Make up guesses for all probabilities
-#         self.prob_cluster = [0 for x in range(self.num_clusters)]
-
-#         # Randomize cluster probabilities so that they add to 1
-#         temp = 1
-#         for c in range(self.num_clusters):
-#             if c == 0:
-#                 self.prob_cluster[c] = random.random()
-#                 temp -= self.prob_cluster[c]
-#             elif c < self.num_clusters-1:
-#                 self.prob_cluster[c] = random.uniform(0, 1-self.prob_cluster[c-1])
-#                 temp -= self.prob_cluster[c]
-#             else:
-#                 self.prob_cluster[c] = temp
-
-#         # Debug print
-#         #for c in range(self.num_clusters):
-#         #    print(self.prob_cluster[c])
-
-#         self.prob_data_given_cluster = [[random.uniform(0,1) for x in range(self.num_data)] for y in range(self.num_clusters)]
-
-#         # The likely cluster of each data point
-#         self.likely_cluster = []
-
-#         # Debug print
-#         #for c in range(self.num_clusters):
-#         #    for d in range(self.num_data):
-#         #        print(self.prob_data_given_cluster[c][d])
-
-
-##############################################################################
 
 # Logics
 # 1) start with k randomly placed Guassians (mean, standard deviation)
@@ -207,18 +174,22 @@ def expectation(data, k_center, k_cov):
     # number of data
     n = data.shape[0]
 
+    data_np = np.array(data)
+
     cluster_prob = []
 
     for k in range(k_center.shape[0]):
-
         a = 1 / (((2 * np.pi) ** (size / 2)) * (np.linalg.det(k_cov[k]) ** (1 / 2)))
-        b = (-1 / 2) * ((data - k_center[k]).dot(np.linalg.inv(k_cov[k]))).dot((data - k_center[k]).T)
+        b = (-1 / 2) * ((data_np - k_center[k]).dot(np.linalg.inv(k_cov[k]))).dot((data_np - k_center[k]).T)
 
-        cluster_prob_k = np.diagonal(a*np.exp(b))
+        #log(a^b) = b*log(a)
+        log_val = b * np.log(a)
+        #cluster_prob_k = np.diagonal(a*np.exp(b))
+        cluster_prob_k = np.diagonal(log_val)
 
         cluster_prob.append(cluster_prob_k)
-
     cluster_prob = np.array(cluster_prob).T
+
 
     # (just remember to normalize the results in the end,
     # since the point must belong to one of the clusters
@@ -231,7 +202,7 @@ def expectation(data, k_center, k_cov):
 
 
 def get_loglikelihood(cluster_prob):
-
+    
     total_likelihood = np.log(cluster_prob).sum()
 
     return total_likelihood
@@ -339,8 +310,12 @@ if len(sys.argv) >= 3:
     num_clusters = int(sys.argv[2])
 
 data = parse_csv_file(file_name)
+print(data)
 
-determine_lowest_k_using_bic(data, k_range = 13)
+if num_clusters == 0:
+    determine_lowest_k_using_bic(data, k_range = 13)
+else:
+    train_em(data, num_clusters, 20)
 
 #maximization()
 #expectation()
