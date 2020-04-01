@@ -90,6 +90,7 @@ def initial_starting_centers(data, k):
 
     return k_center, k_cov
 
+
 def kmeans_initial_starting_centers(data, k):
 
     m = data.shape[1]
@@ -219,7 +220,7 @@ def get_bic(total_likelihood, n_data, m_fea, k):
 
     parameters = k*(m_fea + m_fea ** 2)
 
-    bic = -2*total_likelihood + ((math.log2(n_data))*parameters)
+    bic = -2*total_likelihood + ((math.log(n_data))*parameters)
 
     return bic
 
@@ -314,33 +315,34 @@ def plot_bic(bic_list, k_list, plot_filename = "plot_bic.png"):
 
 def determine_lowest_k_using_bic(data, time_up_bic = 9.5, bic_diff_thred = 0.1):
 
-
-
     start_time_bic = time.time()
 
     k_start = 3
-    bic_old = get_bic(train_em(data, k=(k_start-1), time_up= 2, diff_thred = 1)[1][-1],
+    bic_old = get_bic(train_em(data, k=(k_start-1), time_up= 5, diff_thred = 1)[0][-1],
                       data.shape[0],
                       data.shape[1],
-                      k=(k_start-1))[0]
+                      k=(k_start-1))
 
-    bic_list = [bic_old]
+    bic_list = []
+    bic_list.append(bic_old)
     bic_diff_pct = 100
 
-    while (time.time() - start_time_bic) < time_up_bic:
+    k_range = 10
 
-        while bic_diff_pct > bic_diff_thred:
+    while (bic_diff_pct > bic_diff_thred) & ((time.time() - start_time_bic) < time_up_bic):
+        # while k_start < k_range:
 
-            total_likelihood_list, centers, cov = train_em(data, k=k_start, time_up= 2, diff_thred = 1)
+        total_likelihood_list, centers, cov = train_em(data, k=k_start, time_up= 1, diff_thred = 1)
 
-            bic = get_bic(total_likelihood_list[-1], data.shape[0], data.shape[1], k_start)
+        bic = get_bic(total_likelihood_list[-1], data.shape[0], data.shape[1], k_start)
 
-            bic_diff_pct = (bic_old - bic) / bic_old
+        bic_diff_pct = (bic_old - bic) / bic_old
 
-            bic_list.append(bic)
+        bic_list.append(bic)
 
-            bic_old = bic
-            k_start = k_start + 1
+        bic_old = bic
+
+        k_start = k_start + 1
 
     k_list = [ki + 2 for ki in range(len(bic_list))]
     plot_bic(bic_list, k_list)
@@ -382,8 +384,8 @@ data = parse_csv_file(file_name)
 total_start_time = time.time()
 if num_clusters == 0:
     best_k, ll_data, final_centers, final_cov = determine_lowest_k_using_bic(data,
-                                                                             bic_diff_thred = 1,
-                                                                             time_up_bic=30)
+                                                                             bic_diff_thred = 10e-2,
+                                                                             time_up_bic=10)
     print("Best number of clusters:", best_k)
     print("Final Cluster Centers:")
     for k in range(len(final_centers)):
