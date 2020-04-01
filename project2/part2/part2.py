@@ -219,7 +219,7 @@ def get_bic(total_likelihood, n_data, m_fea, k):
 
     parameters = k*(m_fea + m_fea ** 2)
 
-    bic = -total_likelihood + ((math.log2(n_data))*parameters)
+    bic = -2*total_likelihood + ((math.log2(n_data))*parameters)
 
     return bic
 
@@ -240,11 +240,13 @@ def plot_loglikelihood(total_likelihood_list, plot_filename = "plot_ll.png"):
 
 
 # Main function
-def train_em(data, k, time_up = 9.5, diff_thred = 0.1, start_time = time.time()):
+def train_em(data, k, time_up = 9.5, diff_thred = 0.1):
 
     total_likelihood_series_list = []
     k_center_list = []
     k_cov_list = []
+
+    start_time = time.time()
 
     time_limit = time.time() - start_time
 
@@ -273,7 +275,6 @@ def train_em(data, k, time_up = 9.5, diff_thred = 0.1, start_time = time.time())
             diff_ll = total_likelihood - total_likelihood_old
 
             total_likelihood_old = total_likelihood
-            print(total_likelihood)
 
             time_limit = time.time() - start_time
 
@@ -311,51 +312,40 @@ def plot_bic(bic_list, k_list, plot_filename = "plot_bic.png"):
     plt.close(fig)
 
 
-def determine_lowest_k_using_bic(data, k_range = 10, time_up = 9.5):
+def determine_lowest_k_using_bic(data, time_up_bic = 9.5, bic_diff_thred = 0.1):
 
-    bic_list = []
 
-    start_time = time.time()
-    # for ki in range(k_range):
-    while (time.time() - start_time) < time_up:
 
-        for ki in range(k_range):
+    start_time_bic = time.time()
 
-            total_likelihood_list, centers, cov = train_em(data, ki, time_up= 2, diff_thred = 1)
+    k_start = 3
+    bic_old = get_bic(train_em(data, k=(k_start-1), time_up= 2, diff_thred = 1)[1][-1],
+                      data.shape[0],
+                      data.shape[1],
+                      k=(k_start-1))[0]
 
-            bic = get_bic(total_likelihood_list[-1], data.shape[0], data.shape[1], ki)
+    bic_list = [bic_old]
+    bic_diff_pct = 100
+
+    while (time.time() - start_time_bic) < time_up_bic:
+
+        while bic_diff_pct > bic_diff_thred:
+
+            total_likelihood_list, centers, cov = train_em(data, k=k_start, time_up= 2, diff_thred = 1)
+
+            bic = get_bic(total_likelihood_list[-1], data.shape[0], data.shape[1], k_start)
+
+            bic_diff_pct = (bic_old - bic) / bic_old
 
             bic_list.append(bic)
 
-            print(ki)
+            bic_old = bic
+            k_start = k_start + 1
 
-    k_list = [ki + 2 for ki in range(k_range)]
-
+    k_list = [ki + 2 for ki in range(len(bic_list))]
     plot_bic(bic_list, k_list)
 
-
-    # k_start = 3
-    # bic_old = get_bic(train_em(data, 2, n_epochs)[0][-1], data.shape[0], data.shape[1], 2)[0]
-    # bic_diff_pct = 100
-    # while bic_diff_pct > 0.00000001:
-    #
-    #     total_likelihood_list, centers = train_em(data, k_start, time_up = 0.8)
-    #
-    #     bic, bic_wrong = get_bic(total_likelihood_list[-1], data.shape[0], data.shape[1], k_start)
-    #
-    #     bic_diff_pct = (bic_old - bic) / bic_old
-    #     print(bic_old)
-    #     print(bic)
-    #
-    #     bic_list.append(bic)
-    #     bic_wrong_list.append(bic_wrong)
-    #
-    #     bic_old = bic
-    #     k_start = k_start + 1
-    #
-    # k_list = [ki + 2 for ki in range(len(bic_list))]
-
-    # return (k_start-1), total_likelihood_list, centers, cov
+    return (k_start-1), total_likelihood_list, centers, cov
 
 
 def restart(k):
@@ -374,7 +364,7 @@ def restart(k):
 # Default values
 file_name = "sample_em_data.csv"
 # file_name = "mini_sample.csv"
-num_clusters = 5
+num_clusters = 0
 
 
 # File is arg1
@@ -391,7 +381,9 @@ data = parse_csv_file(file_name)
 
 total_start_time = time.time()
 if num_clusters == 0:
-    best_k, ll_data, final_centers, final_cov = determine_lowest_k_using_bic(data, k_range = 20)
+    best_k, ll_data, final_centers, final_cov = determine_lowest_k_using_bic(data,
+                                                                             bic_diff_thred = 1,
+                                                                             time_up_bic=30)
     print("Best number of clusters:", best_k)
     print("Final Cluster Centers:")
     for k in range(len(final_centers)):
@@ -423,7 +415,3 @@ else:
 # total_likelihood_list, cluster_prob = train_em(X, 3)
 
 # print(cluster_prob.sum(axis=1))
-
-
-#maximization()
-#expectation()
