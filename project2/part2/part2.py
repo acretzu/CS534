@@ -11,7 +11,7 @@ import sys
 import copy
 import pandas as pd
 import matplotlib.pyplot as plt
-from sklearn import datasets
+#from sklearn import datasets
 
 
 
@@ -197,7 +197,7 @@ def expectation(data, k_center, k_cov):
 
 def get_loglikelihood(cluster_prob):
     
-    total_likelihood = np.log(cluster_prob).sum()
+    total_likelihood = cluster_prob.sum()
 
     return total_likelihood
 
@@ -239,22 +239,66 @@ def train_em(data, k, n_epochs):
     # iterate
 
     # TODO: add random restarts  (and sideways moves)
-    for e in range(n_epochs):
+    time_limit = time.time() - start_time
+    centers_too_close = True
+    
+    while time_limit < 10 and centers_too_close:        
+        #print("time = ", time_limit)
+        for e in range(n_epochs):
+            # expectation
+            cluster_prob, cluster_prob_nn = expectation(data, k_center, k_cov)
 
-        # expectation
-        cluster_prob, cluster_prob_nn = expectation(data, k_center, k_cov)
+            # maximization
+            k_center, k_cov = maximization(data, cluster_prob)
 
-        # maximization
-        k_center, k_cov = maximization(data, cluster_prob)
+            # record likelihood
+            total_likelihood = get_loglikelihood(cluster_prob)
+            total_likelihood_list.append(total_likelihood)
 
-        # record likelihood
-        total_likelihood = get_loglikelihood(cluster_prob)
-        total_likelihood_list.append(total_likelihood)
+
+        # Determine which centers are too close
+        restart_centers = []
+        position = 0
+        for center in k_center:
+            #print("center = ", center)
+            values_too_close_flag = False
+            for other_center in k_center:
+
+                # Dont check against self
+                if np.array_equal(other_center, center):
+                    continue
+
+                # Iterate thru N-dimensions and compare each dimension
+                for i, x in np.ndenumerate(center):
+                    
+                    sum_diff = abs(center[i] - other_center[i])
+                    if sum_diff < 2.0:
+                        values_too_close_flag = True
+                    else:
+                        values_too_close_flag = False
+                            
+                if values_too_close_flag:
+                    restart_centers.append(position)                    
+            position += 1
+
+        # Only restart centers if there is enough time
+        time_limit = time.time() - start_time
+        if len(restart_centers) > 0 and time_limit < 10 :
+            #print("Two or more center values are too close!")
+            #print(k_center)
+            centers_too_close = True
+            restarted_k_center, restarted_k_cov = initial_starting_centers(data, k)
+            for p in restart_centers:
+                k_center[p] = restarted_k_center[p]
+                k_cov[p] = restarted_k_cov[p]
+        else:
+            centers_too_close = False                                                                
+        
 
     # save log-likelihood vs. # of iteration
     plot_loglikelihood(total_likelihood_list, plot_filename="plot_ll/plot_ll_"+str(k)+".png")
-
-    return total_likelihood_list
+    
+    return total_likelihood_list, k_center
 
 
 def plot_bic(bic_list, k_list, plot_filename = "plot_bic.png"):
@@ -276,7 +320,7 @@ def determine_lowest_k_using_bic(data, k_range = 10):
 
     bic_list = []
     for ki in range(k_range):
-        total_likelihood_list = train_em(data, ki + 2, 20)
+        total_likelihood_list, centers = train_em(data, ki + 2, 20)
 
         bic = get_bic(total_likelihood_list[-1], data.shape[0], data.shape[1], ki+2)
         bic_list.append(bic)
@@ -286,6 +330,11 @@ def determine_lowest_k_using_bic(data, k_range = 10):
     plot_bic(bic_list, k_list)
 
 
+def restart(k):
+    if k == 0:
+        determine_lowest_k_using_bic(data, k_range = 13)
+    else:
+        train_em(data, num_clusters, 20)
 
 
 #####################
@@ -309,13 +358,22 @@ if len(sys.argv) >= 3:
     num_clusters = int(sys.argv[2])
 
 data = parse_csv_file(file_name)
-print(data)
+#print(data)
 
-
+start_time = time.time()
 if num_clusters == 0:
     determine_lowest_k_using_bic(data, k_range = 20)
 else:
-    train_em(data, num_clusters, 20)
+    ll_data, final_centers = train_em(data, num_clusters, 20)
+    #print("ll_data=\n", ll_data)
+    print("Final Cluster Centers:")
+    #for i, x in np.ndenumerate(final_centers.tolist()):
+    pos = 1
+    for c in final_centers:
+        print("Cluster", pos, "=", c)
+        pos += 1
+    print("------------------------------------------------")
+    print("Total Execution Time = ", time.time() - start_time)
 
 
     # iris = datasets.load_iris()
