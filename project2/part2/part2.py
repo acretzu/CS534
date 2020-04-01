@@ -11,6 +11,7 @@ import sys
 import copy
 import pandas as pd
 import matplotlib.pyplot as plt
+from sklearn import datasets
 
 
 
@@ -86,7 +87,6 @@ def initial_starting_centers(data, k):
     # initialize covariance as identity matrix
     k_cov = np.array([np.identity(m, dtype=np.float64) for i in range(k)])
 
-
     return k_center, k_cov
 
 
@@ -118,24 +118,16 @@ def maximization(data, cluster_prob):
     # number of features
     m = data.shape[1]
 
-
-    # cluster_prob = em_data.prob_data_given_cluster[0]
-    # data = em_data.data
-
     k_cov = []
 
-    # using numpy
-    cluster_prob_np = np.array(cluster_prob)
-    data_np = np.array(data)
-
     # update the k centers    
-    k_center = np.dot(cluster_prob_np.T, data_np) / cluster_prob_np.sum(axis=0).reshape(1, k).T
+    k_center = np.dot(cluster_prob.T, data) / cluster_prob.sum(axis=0).reshape(1, k).T
 
-    # update the cov
+    # update the cov for each cluster
     for ki in range(k):
-        ki_cov = np.dot(np.dot((data - k_center[ki]).T, np.diag(cluster_prob_np[:, ki])),
+        ki_cov = np.dot(np.dot((data - k_center[ki]).T, np.diag(cluster_prob[:, ki])),
                         (data - k_center[ki]))
-        ki_cov_normalize = ki_cov / cluster_prob_np[:, ki].sum()
+        ki_cov_normalize = ki_cov / cluster_prob[:, ki].sum()
         ki_cov_list = ki_cov_normalize.tolist()
 
         k_cov.append(ki_cov_list)
@@ -146,7 +138,6 @@ def maximization(data, cluster_prob):
     k_cov = np.array(k_cov)
 
     return k_center, k_cov
-
 
 
 def expectation(data, k_center, k_cov):
@@ -179,6 +170,7 @@ def expectation(data, k_center, k_cov):
     cluster_prob = []
 
     for k in range(k_center.shape[0]):
+
         a = 1 / (((2 * np.pi) ** (size / 2)) * (np.linalg.det(k_cov[k]) ** (1 / 2)))
         b = (-1 / 2) * ((data_np - k_center[k]).dot(np.linalg.inv(k_cov[k]))).dot((data_np - k_center[k]).T)
 
@@ -196,9 +188,11 @@ def expectation(data, k_center, k_cov):
     # so probabilities have to sum to 1)
     # from professor's reply
 
+    cluster_prob_nn = cluster_prob
+
     cluster_prob = cluster_prob / cluster_prob.sum(axis=1).reshape(n, 1)
 
-    return cluster_prob
+    return cluster_prob, cluster_prob_nn
 
 
 def get_loglikelihood(cluster_prob):
@@ -207,11 +201,13 @@ def get_loglikelihood(cluster_prob):
 
     return total_likelihood
 
+
 def get_bic(total_likelihood, n_data, m_fea, k):
 
     parameters = k*(m_fea + m_fea ** 2)
 
-    bic = -2*total_likelihood + math.log(n_data)*parameters
+    # bic = -2*total_likelihood + (math.log(n_data))*parameters
+    bic = -2*total_likelihood
 
     return bic
 
@@ -238,12 +234,15 @@ def train_em(data, k, n_epochs):
 
     total_likelihood_list = []
 
+    restart = []
+
     # iterate
+
     # TODO: add random restarts  (and sideways moves)
     for e in range(n_epochs):
 
         # expectation
-        cluster_prob = expectation(data, k_center, k_cov)
+        cluster_prob, cluster_prob_nn = expectation(data, k_center, k_cov)
 
         # maximization
         k_center, k_cov = maximization(data, cluster_prob)
@@ -256,7 +255,6 @@ def train_em(data, k, n_epochs):
     plot_loglikelihood(total_likelihood_list, plot_filename="plot_ll/plot_ll_"+str(k)+".png")
 
     return total_likelihood_list
-
 
 
 def plot_bic(bic_list, k_list, plot_filename = "plot_bic.png"):
@@ -273,16 +271,17 @@ def plot_bic(bic_list, k_list, plot_filename = "plot_bic.png"):
     fig.savefig(plot_filename)  # save the figure to file
     plt.close(fig)
 
+
 def determine_lowest_k_using_bic(data, k_range = 10):
 
     bic_list = []
     for ki in range(k_range):
         total_likelihood_list = train_em(data, ki + 2, 20)
 
-        bic = get_bic(total_likelihood_list[-1], data.shape[0], data.shape[1], ki)
+        bic = get_bic(total_likelihood_list[-1], data.shape[0], data.shape[1], ki+2)
         bic_list.append(bic)
 
-    k_list = [ki + 1 for ki in range(k_range)]
+    k_list = [ki + 2 for ki in range(k_range)]
 
     plot_bic(bic_list, k_list)
 
@@ -312,10 +311,23 @@ if len(sys.argv) >= 3:
 data = parse_csv_file(file_name)
 print(data)
 
+
 if num_clusters == 0:
-    determine_lowest_k_using_bic(data, k_range = 13)
+    determine_lowest_k_using_bic(data, k_range = 20)
 else:
     train_em(data, num_clusters, 20)
+
+
+    # iris = datasets.load_iris()
+# X = iris.data
+
+#determine_lowest_k_using_bic(data, k_range=20)
+# determine_lowest_k_using_bic(X, k_range=10)
+
+# total_likelihood_list, cluster_prob = train_em(X, 3, 10)
+
+# print(cluster_prob.sum(axis=1))
+
 
 #maximization()
 #expectation()
