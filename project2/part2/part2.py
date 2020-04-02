@@ -226,7 +226,6 @@ def get_bic(total_likelihood, n_data, m_fea, k):
 
 
 def plot_loglikelihood(total_likelihood_list, plot_filename = "plot_ll.png"):
-
     fig, ax = plt.subplots(nrows=1, ncols=1)  # create figure & 1 axis
     fig.set_size_inches(8, 6)
 
@@ -347,14 +346,8 @@ def determine_lowest_k_using_bic(data, time_up_bic = 9.5, bic_diff_thred = 0.1):
     k_list = [ki + 2 for ki in range(len(bic_list))]
     plot_bic(bic_list, k_list)
 
-    return (k_start-1), total_likelihood_list, centers, cov
+    return (k_start-1), total_likelihood_list, centers, cov, bic_list
 
-
-def restart(k):
-    if k == 0:
-        determine_lowest_k_using_bic(data, k_range = 13)
-    else:
-        train_em(data, num_clusters, 20)
 
 
 #####################
@@ -383,10 +376,11 @@ data = parse_csv_file(file_name)
 
 total_start_time = time.time()
 if num_clusters == 0:
-    best_k, ll_data, final_centers, final_cov = determine_lowest_k_using_bic(data,
+    best_k, ll_data, final_centers, final_cov, bic = determine_lowest_k_using_bic(data,
                                                                              bic_diff_thred = 10e-2,
                                                                              time_up_bic=10)
     print("Best number of clusters:", best_k)
+    print("BIC:", bic)
     print("Final Cluster Centers:")
     for k in range(len(final_centers)):
         print("Cluster", k + 1, )
