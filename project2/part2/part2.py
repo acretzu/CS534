@@ -346,13 +346,6 @@ def determine_lowest_k_using_bic(data, time_up_bic=9.5, bic_diff_thred=0.01):
     return (k_start - 1), total_likelihood_list, centers, cov, bic
 
 
-def restart(k):
-    if k == 0:
-        determine_lowest_k_using_bic(data, k_range=13)
-    else:
-        train_em(data, num_clusters, 20)
-
-
 #####################
 # Script Start
 #####################
