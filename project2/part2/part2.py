@@ -376,7 +376,6 @@ if num_clusters == 0:
                                                                                   bic_diff_thred=10e-4,
                                                                                   time_up_bic=9.5)
     print("Best number of clusters:", best_k)
-    print("BIC:", bic)
     print("Final Cluster Centers:")
     for k in range(len(final_centers)):
         print("Cluster", k + 1, )
