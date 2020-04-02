@@ -224,7 +224,7 @@ def get_bic(total_likelihood, n_data, m_fea, k):
     return bic
 
 
-def plot_loglikelihood(total_likelihood_list, plot_filename="plot_ll.png"):
+def plot_loglikelihood(total_likelihood_list, plot_filename = "plot_ll.png"):
     fig, ax = plt.subplots(nrows=1, ncols=1)  # create figure & 1 axis
     fig.set_size_inches(8, 6)
 
@@ -383,6 +383,7 @@ if num_clusters == 0:
                                                                                   bic_diff_thred=10e-4,
                                                                                   time_up_bic=9.5)
     print("Best number of clusters:", best_k)
+    print("BIC:", bic)
     print("Final Cluster Centers:")
     for k in range(len(final_centers)):
         print("Cluster", k + 1, )
