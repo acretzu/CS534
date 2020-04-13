@@ -680,7 +680,6 @@ class Map:
                     empty_site_list.append([j, i])
                 elif (self.map[i][j] == "I") or (self.map[i][j] == "C") or (self.map[i][j] == "R"):
                     zone_site_list.append([j, i])
-
         return empty_site_list, zone_site_list
 
 
@@ -732,6 +731,12 @@ class Hillclimbing:
             # find all the scores of all the possible options including {check, move, add}
 
             empty_site_list, zone_site_list = init_map.site_category()
+
+            if (len(empty_site_list) > 10):
+                empty_site_list = random.sample(empty_site_list, k=10)
+
+            if (len(zone_site_list) > 10):
+                zone_site_list = random.sample(zone_site_list, k=10)
 
             # move
             # zone_site_list: I, C, R
@@ -1081,7 +1086,7 @@ elif __options__.algorithm == 'HC':
     init_map.print_fancy()
     print("\n")
 
-    hc = Hillclimbing(10)
+    hc = Hillclimbing()
     hc.expand_node(init_map)
     hc.display_result()
 
