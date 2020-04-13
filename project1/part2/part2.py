@@ -925,6 +925,7 @@ if __options__.algorithm == 'GA':
 
     # Start a timer
     start_time = time.time()
+    best_score_time = start_time
 
     # Print the 2d map
     print("Industrial Max: ", INDUSTRIAL_MAX)
@@ -944,7 +945,7 @@ if __options__.algorithm == 'GA':
     # Hyperparameters (adjust for better performance)
     pool_size = 100  # this has to be even
     elite_percent = 5  # percent
-    generations = 100
+    generations = 200
     mutation_chance = 3  # percent
     time_limit = 10  # seconds
     map_pool = []
