@@ -25,7 +25,7 @@ RESIDENTIAL_MAX = 0
 #
 def parse_cmd_line_options():
     parser = OptionParser()
-    parser.add_option("--f", action="store", type="string", dest="txt", default="urban_2.txt", help="The local path to the txt file.")
+    parser.add_option("--f", action="store", type="string", dest="txt", default="urban_real.txt", help="The local path to the txt file.")
     # parser.add_option("--e", action="store", type="string", dest="algorithm", default="GA", help="The algorithm.")
     parser.add_option("--a", action="store", type="string", dest="algorithm", default="GA", help="The algorithm.")
 
@@ -908,6 +908,7 @@ class Hillclimbing:
 # Script Start
 #####################
 
+np.set_printoptions(threshold=np.inf)
 __options__ = parse_cmd_line_options()
 starting_map = parse_csv_file_map()
 loc_maximums = parse_csv_file_maximums()
@@ -915,7 +916,6 @@ loc_maximums = parse_csv_file_maximums()
 INDUSTRIAL_MAX = loc_maximums[0]
 COMMERCIAL_MAX = loc_maximums[1]
 RESIDENTIAL_MAX = loc_maximums[2]
-
 
 print(starting_map)
 # print(type(starting_map))
