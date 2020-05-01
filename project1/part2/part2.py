@@ -25,7 +25,7 @@ RESIDENTIAL_MAX = 0
 #
 def parse_cmd_line_options():
     parser = OptionParser()
-    parser.add_option("--f", action="store", type="string", dest="txt", default="urban_2.txt", help="The local path to the txt file.")
+    parser.add_option("--f", action="store", type="string", dest="txt", default="urban_real.txt", help="The local path to the txt file.")
     # parser.add_option("--e", action="store", type="string", dest="algorithm", default="GA", help="The algorithm.")
     parser.add_option("--a", action="store", type="string", dest="algorithm", default="GA", help="The algorithm.")
 
@@ -680,7 +680,6 @@ class Map:
                     empty_site_list.append([j, i])
                 elif (self.map[i][j] == "I") or (self.map[i][j] == "C") or (self.map[i][j] == "R"):
                     zone_site_list.append([j, i])
-
         return empty_site_list, zone_site_list
 
 
@@ -732,6 +731,12 @@ class Hillclimbing:
             # find all the scores of all the possible options including {check, move, add}
 
             empty_site_list, zone_site_list = init_map.site_category()
+
+            if (len(empty_site_list) > 10):
+                empty_site_list = random.sample(empty_site_list, k=10)
+
+            if (len(zone_site_list) > 10):
+                zone_site_list = random.sample(zone_site_list, k=10)
 
             # move
             # zone_site_list: I, C, R
@@ -903,6 +908,7 @@ class Hillclimbing:
 # Script Start
 #####################
 
+np.set_printoptions(threshold=np.inf)
 __options__ = parse_cmd_line_options()
 starting_map = parse_csv_file_map()
 loc_maximums = parse_csv_file_maximums()
@@ -910,7 +916,6 @@ loc_maximums = parse_csv_file_maximums()
 INDUSTRIAL_MAX = loc_maximums[0]
 COMMERCIAL_MAX = loc_maximums[1]
 RESIDENTIAL_MAX = loc_maximums[2]
-
 
 print(starting_map)
 # print(type(starting_map))
@@ -925,6 +930,7 @@ if __options__.algorithm == 'GA':
 
     # Start a timer
     start_time = time.time()
+    best_score_time = start_time
 
     # Print the 2d map
     print("Industrial Max: ", INDUSTRIAL_MAX)
@@ -944,7 +950,7 @@ if __options__.algorithm == 'GA':
     # Hyperparameters (adjust for better performance)
     pool_size = 100  # this has to be even
     elite_percent = 5  # percent
-    generations = 100
+    generations = 200
     mutation_chance = 3  # percent
     time_limit = 10  # seconds
     map_pool = []
@@ -1080,7 +1086,7 @@ elif __options__.algorithm == 'HC':
     init_map.print_fancy()
     print("\n")
 
-    hc = Hillclimbing(10)
+    hc = Hillclimbing()
     hc.expand_node(init_map)
     hc.display_result()
 
