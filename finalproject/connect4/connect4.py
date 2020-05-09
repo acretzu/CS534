@@ -1,7 +1,9 @@
 #! /usr/bin/python3.6
 
 import sys
+
 from .qlearning import QLearner
+
 
 
 class Connect4:
@@ -136,14 +138,14 @@ class Connect4:
             ret_val = "X"
         elif x == 2:
             ret_val = "O"
-
+            
         return ret_val
 
-
+            
     def play(self, games=1):
         """
         Main game loop. Plays full game iterations.
-        """
+        """    
 
         p1 = None
         p2 = None
@@ -166,11 +168,9 @@ class Connect4:
                 else:
                     self.place(p2_move)
 
-
             print("The winner is player ", self.has_winner())
             self.clear_board()
             games -= 1
-
 
 
 ############
