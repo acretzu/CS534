@@ -2,9 +2,7 @@
 
 import sys
 
-from .qlearning import QLearner
-
-
+from qlearning import QLearner
 
 class Connect4:
 
@@ -152,9 +150,13 @@ class Connect4:
 
         if self.player1 == "Random":
             p1 = QLearner(1) #TODO: Make random player
+        # elif self.player1 == "MonteCarlo":
+        #     p1 = MonteCarlo(1, self)
 
         if self.player2 == "QL":
             p2 = QLearner(2)
+        # elif self.player2 == "MonteCarlo":
+        #     p2 = MonteCarlo(2, self)
 
         while games > 0:
             print("Play iteration = ", games)
@@ -177,5 +179,5 @@ class Connect4:
 # Main Start
 ############
 
-connect4 = Connect4("Random", "QL")
-connect4.play(2)
+#connect4 = Connect4("Random", "QL")
+#connect4.play(2)
