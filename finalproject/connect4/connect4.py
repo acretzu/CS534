@@ -151,7 +151,7 @@ class Connect4:
         Place a piece at the given column
         """
         # Place a piece
-        print("Player", self.turn, "placed piece at column:", column + 1)
+        #print("Player", self.turn, "placed piece at column:", column + 1)
 
         # Sanity check that column is not full
         if self.board[0][column] == 1 or self.board[0][column] == -1:
@@ -235,9 +235,6 @@ class Connect4:
 
             while self.has_winner() == 0:
 
-                p1 = QLearner(1)
-                p2 = MonteCarlo(2, self, depth=5, rollouts=500)
-
                 if self.full():
                     print("It's a draw!")
                     break
@@ -255,7 +252,7 @@ class Connect4:
                         self.place(p1.random_action())
 
                     elif self.player1 == "MonteCarlo":
-                        p1 = MonteCarlo(1, self)
+                        p2 = MonteCarlo(1, self)
 
                     elif self.player1 == "NN":
                         # update
@@ -313,7 +310,9 @@ class Connect4:
 
         while self.has_winner() == 0:
 
-            opp = MonteCarlo(-1, self, depth=5, rollouts=1000)
+            print("1 2 3 4 5 6 7")
+
+            opp = MonteCarlo(-1, self, depth=50, rollouts=1000)
 
             if self.full():
                 print("It's a draw!")
@@ -321,7 +320,7 @@ class Connect4:
 
             if self.turn == player:
                 human_move = int(raw_input(">>> "))
-                self.place_with_print(human_move)
+                self.place_with_print(human_move-1)
             else:
                 opp_move = opp.choose_col()
                 while self.can_place(opp_move) is False:
@@ -329,6 +328,8 @@ class Connect4:
                     opp_move = opp.choose_col()
                 opp.print(opp.root)
                 self.place_with_print(opp_move)
+
+
 
         print("The winner is player ", self.has_winner())
         self.clear_board()
@@ -366,6 +367,8 @@ class Connect4:
 
 """ 5) Random VS MonteCarlo """
 connect4 = Connect4("Random", "MonteCarlo")
+#connect4.play(games=100)
+print(connect4.__str__())
 connect4.play_human(1)
 
 
@@ -397,9 +400,6 @@ connect4.play_human(1)
 """ MonteCarlo VS MonteCarlo """
 
 
-############
-# NOTE: has_winner() is not working correctly
-############
 
 
 
