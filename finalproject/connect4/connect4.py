@@ -2,6 +2,7 @@
 
 import sys
 
+from pip._vendor.distlib.compat import raw_input
 from qlearning import QLearner
 from monte_carlo import MonteCarlo
 
@@ -58,7 +59,7 @@ class Connect4:
             for y in range(height - 3):
                 if self.board[x][y] == 1 and self.board[x+1][y+1] == 1 and self.board[x+2][y+2] == 1 and self.board[x+3][y+3] == 1:
                     return 1
-                if self.board[x][y] == 2 and self.board[x+1][y+1] == 2 and self.board[x+2][y+2] == 1 and self.board[x+3][y+3] == 2:
+                if self.board[x][y] == 2 and self.board[x+1][y+1] == 2 and self.board[x+2][y+2] == 2 and self.board[x+3][y+3] == 2:
                     return 2
 
         return 0
@@ -93,12 +94,33 @@ class Connect4:
         ret_val = True
 
         for i in range(len(self.board)):
-            if self.board[i][0] == 0:
+            if self.board[0][i] == 0:
                 ret_val = False
 
         return ret_val
 
     def place(self, column):
+        """
+        Place a piece at the given column
+        """
+
+        # Sanity check that column is not full
+        if self.board[0][column] == 1 or self.board[0][column] == 2:
+            return
+
+        # Add player to bottom-most row
+        for h in reversed(range(6)):
+            if self.board[h][column] is 0:
+                self.board[h][column] = self.turn
+                break
+
+        # Change turn
+        if self.turn == 1:
+            self.turn = 2
+        else:
+            self.turn = 1
+
+    def place_with_print(self, column):
         """
         Place a piece at the given column
         """
@@ -176,7 +198,7 @@ class Connect4:
             while self.has_winner() == 0:
 
                 p1 = QLearner(1)
-                p2 = MonteCarlo(2, self)
+                p2 = MonteCarlo(2, self, depth=5, rollouts=500)
 
                 if self.full():
                     print("It's a draw!")
@@ -186,17 +208,44 @@ class Connect4:
                     p1_move = p1.random_action()
                     while self.can_place(p1_move) is False:
                         p1_move = p1.random_action()
-                    self.place(p1_move)
+                    self.place_with_print(p1_move)
                 else:
                     p2_move = p2.choose_col()
                     while self.can_place(p2_move) is False:
                         print(p2_move)
                         p2_move = p2.choose_col()
-                    self.place(p2_move)
+                    self.place_with_print(p2_move)
 
             print("The winner is player ", self.has_winner())
             self.clear_board()
             games -= 1
+
+    def play_human(self, player):
+        """
+        Main game loop. Waits for human input.
+        """
+
+        while self.has_winner() == 0:
+
+            opp = MonteCarlo(2, self, depth=5, rollouts=10000)
+
+            if self.full():
+                print("It's a draw!")
+                return
+
+            if self.turn == player:
+                human_move = int(raw_input(">>> "))
+                self.place_with_print(human_move)
+            else:
+                opp_move = opp.choose_col()
+                while self.can_place(opp_move) is False:
+                    print(opp_move)
+                    opp_move = opp.choose_col()
+                opp.print(opp.root)
+                self.place_with_print(opp_move)
+
+        print("The winner is player ", self.has_winner())
+        self.clear_board()
 
 
 ############
@@ -204,7 +253,7 @@ class Connect4:
 ############
 
 connect4 = Connect4("Random", "MonteCarlo")
-connect4.play(1)
+connect4.play_human(1)
 
 ############
 #NOTE: has_winner() is not working correctly
