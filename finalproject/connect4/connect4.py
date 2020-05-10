@@ -14,13 +14,15 @@ class Connect4:
                       [0,0,0,0,0,0,0]]
         self.player1 = player1
         self.player2 = player2
+        self.draw = False
+        self.prev_board = None
         self.turn = 1  # Player 1
 
 
-    def has_winner(self):
+    def check_winner(self):
         """ 
         Determine if there is a winner (4 in a row, col, diag)
-        Returns 0 if no winner, 1 if player 1 wins, 2 if player 2 wins
+        Returns 0 if no winner, 1 if player 1 wins, 2 if player 2 wins, 3 if draw
         """
         width = len(self.board)
         height = len(self.board[0])
@@ -58,6 +60,17 @@ class Connect4:
                 if self.board[x][y] == 2 and self.board[x+1][y+1] == 2 and self.board[x+2][y+2] == 1 and self.board[x+3][y+3] == 2:
                     return 2                
 
+
+        for x in range(width):
+            if self.board[x][0] == 1 or self.board[x][0] == 2:
+                self.draw = True
+            else:
+                self.draw = False
+                break
+
+        if self.draw is True:
+            return 3
+            
         return 0
 
     def clear_board(self):
@@ -82,7 +95,18 @@ class Connect4:
 
         return ret_val
 
-    
+    def available_cols(self):
+        ret_val = [0, 1, 2, 3, 4, 5, 6]
+
+        for i in range(7):
+            if self.board[i][0] == 1 or self.board[i][0] == 2:
+                ret_val.remove[i]
+                print("col ", i , " is not available")
+                print(ret_val)
+        
+        return ret_val
+
+
         
     def place(self, column):
         """
@@ -96,6 +120,18 @@ class Connect4:
             print("Board is full at that column! Col =", column)
             sys.exit(1)
 
+        # Save current board as previous
+        self.prev_board = [row[:] for row in self.board]
+
+        foo = ""
+        for r in range(len(self.board)):
+            for c in range(len(self.board[0])):
+                foo += self.int2str(self.prev_board[r][c]) + " "
+            foo += "\n"
+        print("Prev_board:")
+        print(foo)
+
+        
         # Add player to bottom-most row
         for h in reversed(range(6)):
             if self.board[h][column] is 0:
@@ -157,7 +193,7 @@ class Connect4:
         while games > 0:
             print("Play iteration = ", games)
 
-            while self.has_winner() == 0:
+            while self.check_winner() == 0:
                 p1_move = p1.random_action()
                 p2_move = p2.random_action()
 
@@ -166,8 +202,8 @@ class Connect4:
                 else:
                     self.place(p2_move)
             
-                
-            print("The winner is player ", self.has_winner())
+            
+            print("The winner is player ", self.check_winner())
             self.clear_board()
             games -= 1
             

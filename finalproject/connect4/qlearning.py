@@ -1,8 +1,8 @@
 #! /usr/bin/python3.6
 
-import os
 import sys
 import random
+#from connect4 import Connect4
 from decimal import Decimal
 
 class QLearner:
@@ -55,146 +55,29 @@ class QLearner:
         """
         return self.q[a]
 
-    def learn(self, board, actions, chosen_action, game_over, game_logic):
-        """
-        Run the Q-Learning algorithm
-        """
-        reward = 0
-        if (game_over):
-            win_value = game_logic.get_winner()
-            if win_value == 0:
-                reward = 0.5
-            elif win_value == self.coin_type:
-                reward = 1
-            else:
-                reward = -2
-        prev_state = board.get_prev_state()
-        prev = self.getQ(prev_state, chosen_action)
-        result_state = board.get_state()
-        maxqnew = max([self.getQ(result_state, a) for a in actions])
-        self.q[(prev_state, chosen_action)] = prev + self.alpha * ((reward + self.gamma*maxqnew) - prev)
-        
     def random_action(self):
         """
         Returns a random column (0-6)
         """
         return random.randint(0,6)
 
-        
+    def learn(self, board, actions):
+        """
+        Run the Q-Learning algorithm
+        """
+        reward = 0
+        winner = board.check_winner()
+        if (winner > 0):
+            if winner == 3: # Draw
+                reward = 0.5
+            elif winner == self.player: # Win
+                reward = 1
+            else: # Lose
+                reward = -2
+        prev_state = board.get_prev_state()
+        prev = self.getQ(prev_state, chosen_action)
+        result_state = board.get_state()
+        maxqnew = max([self.getQ(result_state, a) for a in actions])
+        self.q[(prev_state, chosen_action)] = prev + self.alpha * ((reward + self.gamma*maxqnew) - prev)        
+
     
-class QLGrid:
-    """
-    The class that does Q-learning
-    """
-    def __init__(self, f, cost, prob):
-        self.num_rows = 0
-        self.num_cols = 0
-        self.exploration = 1
-        self.move_cost = cost
-        self.move_prob = prob
-        self.steps = 0
-        self.decay = 0.92
-        self.alpha = 0.5
-        self.gamma = 0.9
-        self.ongoing_reward = 0.0
-        self.runs = 0
-        self.converge_val = Decimal(0.0)
-        self.converge_th = Decimal(0.000000001)
-        self.converged_trials = 0
-        self.visited_confidence_th = move_cost * 10
-        self.converged_time = time.time()                            
-        
-
-    def explore(self):
-        """
-        Returns ture if we rolled for exploration, else false (exploitation)
-        """
-        ret_val = True
-        # Always start with 100% exploration
-        if(self.steps == 0):
-            return ret_val
-        else:
-            # Otherwise multiply the current rate by the decay value
-            roll = random.uniform(0, self.exploration)
-            if(roll > self.exploration):
-                ret_val = False
-        return ret_val    
-
-    def ql_algorithm(self, x, y, a, new_x, new_y):
-        """
-        Runs the Q-Learning algorithm to update the current state
-        """
-        qcurrent = self.grid[x][y].get_action_value(a)
-        qnew = self.grid[new_x][new_y].get_max()
-        new_total = qcurrent + self.alpha *(self.move_cost + self.gamma * qnew - qcurrent)
-
-        # Update the state
-        self.grid[x][y].update(a, new_total)
-        
-
-
-    def epsilon_greedy(self):
-        """
-        Implements epsilon-greedy for epsilon == 0.1
-        """
-        roll = random.random()
-
-        if roll <= 0.1:
-            return random.randint(0,3)
-        else:
-            return self.grid[self.agent_y][self.agent_x].get_max_action()  
-    
-    def learn(self, num_steps):
-        """
-        Runs the Q-Learning main loop
-        """
-        
-        # Initial exploration
-        self.exploration *= self.decay
-
-        # Q-Learning main loop
-        initial_steps = self.steps
-            
-        while(self.steps < num_steps+initial_steps):
-            self.runs += 1
-
-            # If we are exploring, then select a random action
-            if(self.explore()):
-                action = self.random_action()
-                #action = self.least_visited()
-            # Otherwise, do exploitation
-            else:
-                action = self.grid[self.agent_y][self.agent_x].get_max_action()
-
-            # Testing random
-            #action = self.random_action()
-
-            # Testing epsilon-greedy
-            #action = self.epsilon_greedy()
-
-            # Save current state position
-            current_x = self.agent_x
-            current_y = self.agent_y
-            
-            # Run trans model to see new location            
-            new_state = self.transition(action)
-
-            # Update Q values for prior state based on best move for new location
-            self.ql_algorithm(current_y, current_x, action, self.agent_y, self.agent_x)
-
-            # if terminal state then end trial, otherwise loop back top
-            if self.grid[self.agent_y][self.agent_x].terminal:
-                self.steps += 1
-                self.init_agent()
-                self.exploration *= self.decay
-
-            
-    def print_summary(self):
-        """
-        Prints number of trials and average reward (performance)
-        """
-        print("Trials run:", self.steps)
-        rwd_str = "Average reward: " + '{:.3f}'.format(self.ongoing_reward / self.runs)       
-        print(rwd_str)
-        if self.converged_trials == 500:
-            print("Time to converge: " + '{:.3f}'.format(time.time() - self.converged_time))
