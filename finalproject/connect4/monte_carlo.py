@@ -81,6 +81,9 @@ class MonteCarlo:
 
             column = randrange(7)
 
+        print(game.__str__())
+        print(game.has_winner())
+        #print(self.player)
         if game.has_winner() is self.player:
 
             root.children[col].count += 1

@@ -49,8 +49,7 @@ class Connect4:
         # check vertical spaces
         for x in range(width):
             for y in range(height - 3):
-                if self.board[x][y] == 1 and self.board[x][y + 1] == 1 and self.board[x][y + 2] == 1 and self.board[x][
-                    y + 3] == 1:
+                if self.board[x][y] == 1 and self.board[x][y + 1] == 1 and self.board[x][y + 2] == 1 and self.board[x][y + 3] == 1:
                     return 1
                 if self.board[x][y] == -1 and self.board[x][y + 1] == -1 and self.board[x][y + 2] == -1 and \
                         self.board[x][y + 3] == -1:
@@ -132,7 +131,7 @@ class Connect4:
         """
 
         # Sanity check that column is not full
-        if self.board[0][column] == 1 or self.board[0][column] == 2:
+        if self.board[0][column] == 1 or self.board[0][column] == -1:
             return
 
         # Add player to bottom-most row
@@ -143,7 +142,7 @@ class Connect4:
 
         # Change turn
         if self.turn == 1:
-            self.turn = 2
+            self.turn = -1
         else:
             self.turn = 1
 
@@ -314,7 +313,7 @@ class Connect4:
 
         while self.has_winner() == 0:
 
-            opp = MonteCarlo(2, self, depth=5, rollouts=10000)
+            opp = MonteCarlo(-1, self, depth=5, rollouts=1000)
 
             if self.full():
                 print("It's a draw!")
@@ -345,9 +344,9 @@ class Connect4:
 """
 
 """ 1) Random VS NN  """
-connect4 = Connect4("NN", "Random")
-# connect4 = Connect4("Random", "NN")
-connect4.play(games=1000, is_savedata=True, save_filename = "NNVSRandom")
+# connect4 = Connect4("NN", "Random")
+# # connect4 = Connect4("Random", "NN")
+# connect4.play(games=1000, is_savedata=True, save_filename = "NNVSRandom")
 
 
 """ 2) MonteCarlo VS NN """
@@ -366,7 +365,8 @@ connect4.play(games=1000, is_savedata=True, save_filename = "NNVSRandom")
 
 
 """ 5) Random VS MonteCarlo """
-
+connect4 = Connect4("Random", "MonteCarlo")
+connect4.play_human(1)
 
 
 
