@@ -49,7 +49,8 @@ class Connect4:
         # check vertical spaces
         for x in range(width):
             for y in range(height - 3):
-                if self.board[x][y] == 1 and self.board[x][y + 1] == 1 and self.board[x][y + 2] == 1 and self.board[x][y + 3] == 1:
+                if self.board[x][y] == 1 and self.board[x][y + 1] == 1 and self.board[x][y + 2] == 1 and self.board[x][
+                    y + 3] == 1:
                     return 1
                 if self.board[x][y] == -1 and self.board[x][y + 1] == -1 and self.board[x][y + 2] == -1 and \
                         self.board[x][y + 3] == -1:
@@ -229,9 +230,11 @@ class Connect4:
 
         iter_n = games
 
-
         while games > 0:
             print("Play iteration = ", games)
+
+            # record total move in each game
+            total_move = 0
 
             while self.has_winner() == 0:
 
@@ -288,12 +291,16 @@ class Connect4:
                         # place
                         self.place(p2.choose_col())
 
+                if is_savedata:
+                    "add features for training data for NN"
+                    traindata_feature.append(np.array(self.board).reshape(42))
 
-            # add training data for NN
+                total_move = total_move + 1
+
+            """add targets for training data for NN"""
             if is_savedata:
-                "Save data for DNN"
-                traindata_feature.append(np.array(self.board).reshape(42))
-                traindata_target.append(self.target())
+                for m in range(total_move):
+                    traindata_target.append(self.target())
 
             print("The winner is player ", self.has_winner())
             self.clear_board()
@@ -344,9 +351,9 @@ class Connect4:
 """
 
 """ 1) Random VS NN  """
-# connect4 = Connect4("NN", "Random")
+connect4 = Connect4("NN", "Random")
 # # connect4 = Connect4("Random", "NN")
-# connect4.play(games=1000, is_savedata=True, save_filename = "NNVSRandom")
+connect4.play(games=1000, is_savedata=True, save_filename = "NNVSRandom"+ str(int(time.time())))
 
 
 """ 2) MonteCarlo VS NN """
@@ -356,25 +363,14 @@ class Connect4:
 
 """ 3) QL VS NN  """
 
-
-
-
 """ 4) QL VS MonteCarlo"""
 
-
-
-
 """ 5) Random VS MonteCarlo """
-connect4 = Connect4("Random", "MonteCarlo")
-connect4.play_human(1)
-
+# connect4 = Connect4("Random", "MonteCarlo")
+# connect4.play_human(1)
 
 
 """ 6) Random VS QL """
-
-
-
-
 
 """
 ========== Self Game ==========
@@ -382,8 +378,7 @@ connect4.play_human(1)
 
 """ Random VS Random """
 # connect4 = Connect4("Random", "Random")
-# connect4.play(games=1, is_savedata=False)
-
+# connect4.play(games=10000, is_savedata=True, save_filename="Random_Random_eachstep" + str(int(time.time())))
 
 """ NN VS Nn """
 # connect4 = Connect4("NN", "NN")
@@ -392,14 +387,8 @@ connect4.play_human(1)
 
 """ QL VS QL """
 
-
-
 """ MonteCarlo VS MonteCarlo """
-
 
 ############
 # NOTE: has_winner() is not working correctly
 ############
-
-
-
