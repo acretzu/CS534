@@ -15,10 +15,12 @@ class Node:
 
 class MonteCarlo:
 
-    def __init__(self, player, c4):
+    def __init__(self, player, c4, depth=1, rollouts=500):
         self.root = Node(None, [])
         self.c4 = c4
         self.player = player
+        self.depth = depth
+        self.rollouts = rollouts
 
     def win_ratio(self, root):
         if root.count is 0:
@@ -79,6 +81,9 @@ class MonteCarlo:
 
             column = randrange(7)
 
+        print(game.__str__())
+        print(game.has_winner())
+        #print(self.player)
         if game.has_winner() is self.player:
 
             root.children[col].count += 1
@@ -116,7 +121,7 @@ class MonteCarlo:
     def choose_col(self):
 
         # Create this moves tree with depth [range(x)]
-        for i in range(3):
+        for i in range(self.depth):
 
             # Select best child
             root = self.select()
@@ -129,7 +134,7 @@ class MonteCarlo:
             self.expand(root)
 
             # Simulate games for random children
-            for i in range(40):
+            for i in range(self.rollouts):
 
                 # Board is back to state of interest
                 #print(game.board)
