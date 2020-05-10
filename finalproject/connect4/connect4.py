@@ -3,6 +3,8 @@
 import sys
 
 from qlearning import QLearner
+from monte_carlo import MonteCarlo
+
 
 class Connect4:
 
@@ -79,8 +81,20 @@ class Connect4:
         """
         ret_val = True
 
-        if self.board[column][0] == 1 or self.board[column][0] == 2:
+        if self.board[0][column] == 1 or self.board[0][column] == 2:
             ret_val = False
+
+        return ret_val
+
+    def full(self):
+        """
+        Returns true if the board is full
+        """
+        ret_val = True
+
+        for i in range(len(self.board)):
+            if self.board[i][0] == 0:
+                ret_val = False
 
         return ret_val
 
@@ -150,24 +164,34 @@ class Connect4:
 
         if self.player1 == "Random":
             p1 = QLearner(1) #TODO: Make random player
-        # elif self.player1 == "MonteCarlo":
-        #     p1 = MonteCarlo(1, self)
 
         if self.player2 == "QL":
             p2 = QLearner(2)
-        # elif self.player2 == "MonteCarlo":
-        #     p2 = MonteCarlo(2, self)
+        elif self.player2 == "MonteCarlo":
+            p2 = MonteCarlo(2, self)
 
         while games > 0:
             print("Play iteration = ", games)
 
             while self.has_winner() == 0:
-                p1_move = p1.random_action()
-                p2_move = p2.random_action()
 
-                if(self.turn == 1):
+                p1 = QLearner(1)
+                p2 = MonteCarlo(2, self)
+
+                if self.full():
+                    print("It's a draw!")
+                    return
+
+                if self.turn == 1:
+                    p1_move = p1.random_action()
+                    while self.can_place(p1_move) is False:
+                        p1_move = p1.random_action()
                     self.place(p1_move)
                 else:
+                    p2_move = p2.choose_col()
+                    while self.can_place(p2_move) is False:
+                        print(p2_move)
+                        p2_move = p2.choose_col()
                     self.place(p2_move)
 
             print("The winner is player ", self.has_winner())
@@ -179,5 +203,9 @@ class Connect4:
 # Main Start
 ############
 
-#connect4 = Connect4("Random", "QL")
-#connect4.play(2)
+connect4 = Connect4("Random", "MonteCarlo")
+connect4.play(1)
+
+############
+#NOTE: has_winner() is not working correctly
+############
