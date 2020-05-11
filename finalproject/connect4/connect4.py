@@ -197,7 +197,7 @@ class Connect4:
         if x == 1:
             ret_val = colored("O", 'red')
         elif x == -1:
-            ret_val = colored("O", 'blue')
+            ret_val = colored("O", 'yellow')
 
         return ret_val
 
@@ -253,6 +253,7 @@ class Connect4:
 
                     elif self.player1 == "MonteCarlo":
                         p2 = MonteCarlo(1, self)
+                        self.place(p2.choose_col())
 
                     elif self.player1 == "NN":
                         # update
@@ -312,13 +313,14 @@ class Connect4:
 
             print("1 2 3 4 5 6 7")
 
-            opp = MonteCarlo(1, self, depth=100, rollouts=1000)
+            opp = MonteCarlo(-1, self, depth=100, rollouts=1000)
 
             if self.full():
                 print("It's a draw!")
                 return
 
-            if self.turn == player:
+
+            if self.turn is player:
                 human_move = int(raw_input(">>> "))
                 self.place_with_print(human_move-1)
             else:
@@ -329,9 +331,10 @@ class Connect4:
                 opp.print(opp.root)
                 self.place_with_print(opp_move)
 
-
-
-        print("The winner is player ", self.has_winner())
+        if self.has_winner() is player:
+            print("You won!")
+        else:
+            print("The winner is MarcBot!")
         self.clear_board()
 
 
@@ -366,10 +369,11 @@ class Connect4:
 
 
 """ 5) Random VS MonteCarlo """
-connect4 = Connect4("Random", "MonteCarlo")
-#connect4.play(games=100)
-print(connect4.__str__())
-connect4.play_human(-1)
+# connect4 = Connect4("Random", "MonteCarlo")
+# connect4.play(games=100)
+# while True:
+#     print(connect4.__str__())
+#     connect4.play_human(1)
 
 
 
@@ -398,5 +402,6 @@ connect4.play_human(-1)
 
 
 """ MonteCarlo VS MonteCarlo """
-
+connect4 = Connect4("MonteCarlo", "MonteCarlo")
+connect4.play(games=100)
 
