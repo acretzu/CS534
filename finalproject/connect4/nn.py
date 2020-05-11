@@ -8,8 +8,8 @@ from copy import deepcopy
 
 import numpy as np
 
-model_path = 'model_1589096133.h5'
-
+# model_path = 'model_1589096133.h5'
+model_path = '10000_Random_Random_eachstep1589140617.h5'
 
 class NN_Player:
 
