@@ -1,21 +1,33 @@
-import keras
-from keras.models import Sequential, load_model
-from keras.layers import Dense, Dropout, Activation, Flatten
-from keras.layers import Conv2D, MaxPooling2D
+
 from keras.models import Sequential, load_model
 
 from copy import deepcopy
 
 import numpy as np
 
-# model_path = 'model_1589096133.h5'
-model_path = '10000_Random_Random_eachstep1589140617.h5'
+# model_path_set = 'model_1589096133.h5'
+# model_path_set = 'TrainingData/10000_Random_Random_eachstep1589140617.h5'
+# model_path_set = 'TrainingData/10000_Random_Random_eachstep1589140617_100ep.h5'
+
+# six neural networks
+# "100000_RR_32x2_32x2_32_32.h5"
+# "100000_RR_32x2_32x2_32x2_32_32_32.h5"
+# "100000_RR_64x2_64.h5"  (best one)
+# "100000_RR_64x2_64x2_64_64.h5"
+# "100000_RR_128x4_32x2_64_32.h5"
+# "100000_RR_256x4_64x2_32x2_64_32"
+
+# "100000_RR_256x4_64x2_32x2_64_32_dropout"
 
 class NN_Player:
 
-    def __init__(self, player, board, potential_move, model_path='model_1589096133.h5'):
+    def __init__(self, player, board, potential_move, model_path='Model/100000_RR_64x2_64.h5'):
         self.player = player
         self.model = load_model(model_path)
+        self.board = deepcopy(board)
+        self.potential_move = deepcopy(potential_move)
+
+    def update(self, board, potential_move):
         self.board = deepcopy(board)
         self.potential_move = deepcopy(potential_move)
 

@@ -29,9 +29,8 @@ class Connect4:
         self.width = len(self.board)
         self.height = len(self.board[0])
 
-
     def has_winner(self):
-        """ 
+        """
         Determine if there is a winner (4 in a row, col, diag)
         Returns 0 if no winner, 1 if player 1 wins, -1 if player 2 wins
         """
@@ -79,7 +78,6 @@ class Connect4:
                         self.board[x + 3][y + 3] == -1:
                     return -1
 
-
         for x in range(width):
             if self.board[x][0] == 1 or self.board[x][0] == 2:
                 self.draw = True
@@ -89,7 +87,7 @@ class Connect4:
 
         if self.draw is True:
             return 3
-            
+
         return 0
 
     def clear_board(self):
@@ -114,7 +112,6 @@ class Connect4:
 
         return ret_val
 
-
     def available_columns(self):
 
         """
@@ -129,7 +126,6 @@ class Connect4:
 
         return available_col
 
-
     def full(self):
         """
         Returns true if the board is full
@@ -141,7 +137,6 @@ class Connect4:
                 ret_val = False
 
         return ret_val
-
 
     def place(self, column):
         """
@@ -169,7 +164,7 @@ class Connect4:
         Place a piece at the given column
         """
         # Place a piece
-        #print("Player", self.turn, "placed piece at column:", column + 1)
+        # print("Player", self.turn, "placed piece at column:", column + 1)
 
         # Sanity check that column is not full
         if self.board[0][column] == 1 or self.board[0][column] == -1:
@@ -187,7 +182,6 @@ class Connect4:
         #print("Prev_board:")
         #print(foo)
 
-        
         # Add player to bottom-most row
         for h in reversed(range(6)):
             if self.board[h][column] is 0:
@@ -246,24 +240,7 @@ class Connect4:
             t = self.has_winner()
         return t
 
-
-    def get_state(self):
-        """
-        Return the 2d list numerical representation of the board
-        """
-        result = tuple(tuple(x) for x in self.board)
-        
-        return result
-    
-    def get_prev_state(self):
-        """
-        Return the previous state of the board
-        """
-        result = tuple(tuple(x) for x in self.prev_board)
-        
-        return result
-
-    def play(self, games=1, is_savedata=False, save_filename=str(int(time.time()))):
+    def play(self, games=1, traindata_flag=False, saveresults_flag=True, save_filename=str(int(time.time()))):
         """
         Main game loop. Plays full game iterations.
         """
@@ -275,14 +252,14 @@ class Connect4:
         traindata_target = []
 
         iter_n = games
-        
+
         # Select player1 outside of game loop
         if self.player1 == "Random":
             p1 = RandomPlayer(self.available_columns())
         elif self.player1 == "QL":
-            p1 = QLearner(1, self)            
+            p1 = QLearner(1, self)
         elif self.player1 == "MonteCarlo":
-            p1 = MonteCarlo(1, self)                
+            p1 = MonteCarlo(1, self)
         elif self.player1 == "NN":
             # update
             p1 = NN_Player(1, self.board, self.available_columns())
@@ -297,12 +274,16 @@ class Connect4:
         elif self.player2 == "NN":
             p2 = NN_Player(-1, self.board, self.available_columns())
 
-            
         while games > 0:
             print("Play iteration = ", games)
 
             # record total move in each game
             total_move = 0
+
+            if self.player1 == "NN":
+                p1 = NN_Player(1, self.board, self.available_columns())
+            if self.player2 == "NN":
+                p2 = NN_Player(-1, self.board, self.available_columns())
 
             while self.has_winner() == 0:
 
@@ -317,50 +298,56 @@ class Connect4:
                         self.place(p1.choose_col())
 
                     elif self.player1 == "QL":
-                        #p1 = QLearner(1)
+                        # p1 = QLearner(1)
                         p1.learn()
-                        
+
                     elif self.player1 == "MonteCarlo":
                         self.place(p1.choose_col())
 
                     elif self.player1 == "NN":
                         # update
-                        p1 = NN_Player(1, self.board, self.available_columns())
+                        p1.update(self.board, self.available_columns())
                         # place
                         self.place(p1.choose_col())
 
                     if self.player2 == "QL":
                         p2.check_if_lost()
-                        
+
                 else:
 
                     # Which Strategy for Palyer 2
                     if self.player2 == "Random":
                         # place
                         self.place(p2.choose_col())
+
                     elif self.player2 == "QL":
                         p2.learn()
+
                     elif self.player2 == "MonteCarlo":
                         self.place(p2.choose_col())
+
                     elif self.player2 == "NN":
+                        p2.update(self.board, self.available_columns())
+                        # place
                         self.place(p2.choose_col())
 
                     if self.player1 == "QL":
                         p1.check_if_lost()
-                
 
-                if is_savedata:
-                    "add features for training data for NN"
+                if traindata_flag:
+                    # add features for training data for NN
                     traindata_feature.append(np.array(self.board).reshape(42))
 
                 total_move = total_move + 1
 
-                print(self.__str__())
-
-            """add targets for training data for NN"""
-            if is_savedata:
+            # add targets for training data for NN
+            if traindata_flag:
                 for m in range(total_move):
                     traindata_target.append(self.target())
+
+            # complete results
+            if saveresults_flag:
+                traindata_target.append(self.target())
 
             print("The winner is player ", self.has_winner())
 
@@ -368,11 +355,17 @@ class Connect4:
             games -= 1
 
         # save training data for NN
-        if is_savedata:
+        if traindata_flag:
             np.savetxt('TrainingData/features_' + str(iter_n) + '_' + save_filename + '.csv',
                        traindata_feature, delimiter=',', fmt='%10.0f')
             np.savetxt('TrainingData/targets_' + str(iter_n) + '_' + save_filename + '.csv',
                        traindata_target, delimiter=',', fmt='%10.0f')
+
+        # save game results for comparison
+        if saveresults_flag:
+            np.savetxt(
+                'Game_results/' + self.player1 + '_' + self.player2 + '_' + str(iter_n) + '_' + save_filename + '.csv',
+                traindata_target, delimiter=',', fmt='%10.0f')
 
     def play_human(self, player):
         """
@@ -382,7 +375,7 @@ class Connect4:
 
         while self.has_winner() == 0:
 
-            #print("1 2 3 4 5 6 7")
+            # opp = MonteCarlo(1, self, depth=100, rollouts=1000)
 
             if self.full():
                 print("It's a draw!")
@@ -390,24 +383,16 @@ class Connect4:
 
             if self.turn is player:
                 human_move = int(raw_input(">>> "))
-                self.place_with_print(human_move-1)
-
-                if self.player2 == "QL":
-                    opp.check_if_lost()
-
+                self.place_with_print(human_move - 1)
+                opp.check_if_lost()
             else:
-                if self.player2 == "Random":
-                    # place
-                    self.place(opp.choose_col())
-                elif self.player2 == "QL":
-                    opp.learn()
-                elif self.player2 == "MonteCarlo":
-                    self.place(opp.choose_col())
-                elif self.player2 == "NN":
-                    self.place(opp.choose_col())
-
-                if self.player1 == "QL":
-                    opp.check_if_lost()
+                # opp_move = opp.choose_col()
+                opp.learn()
+                # while self.can_place(opp_move) is False:
+                #    print(opp_move)
+                #    opp_move = opp.choose_col()
+                # opp.print(opp.root)
+                # self.place_with_print(opp_move)
 
         if self.has_winner() is player:
             print("You won!")
@@ -426,25 +411,26 @@ class Connect4:
 """
 
 """ 1) Random VS NN  """
-#connect4 = Connect4("NN", "Random")
-# # connect4 = Connect4("Random", "NN")
-#connect4.play(games=1000, is_savedata=True, save_filename = "NNVSRandom"+ str(int(time.time())))
-
+# connect4 = Connect4("NN", "Random")
+# connect4 = Connect4("Random", "NN")
+# connect4.play(games=100, save_filename=str(int(time.time())) + '100000_RR_256x4_64x2_32x2_64_32_dropout_')
 
 """ 2) MonteCarlo VS NN """
 # connect4 = Connect4("NN", "MonteCarlo")
-# connect4.play(games=1, is_savedata=False)
+# # connect4 = Connect4("MonteCarlo","NN")
+# connect4.play(games=10, traindata_flag=False)
 
 
 """ 3) QL VS NN  """
-#connect4 = Connect4("Random", "Random")
-#connect4.play(1)
-#connect4.play_human(1)
+connect4 = Connect4("NN", "QL")
+# connect4 = Connect4("QL", "NN")
+connect4.play(100)
+# connect4.play_human(-1);
 
 
 """ 4) QL VS MonteCarlo"""
-#connect4 = Connect4("MonteCarlo", "QL")
-#connect4.play(1)
+# connect4 = Connect4("MonteCarlo", "QL")
+# connect4.play(1)
 
 """ 5) Random VS MonteCarlo """
 # connect4 = Connect4("Human", "QL")
@@ -454,15 +440,16 @@ class Connect4:
 #     connect4.play_human(-1)
 
 
-#connect4 = Connect4("Random", "MonteCarlo")
-#connect4.play(games=100)
-#print(connect4.__str__())
-#connect4.play_human(-1)
-
-
+# connect4 = Connect4("Random", "MonteCarlo")
+# connect4.play(games=100)
+# print(connect4.__str__())
+# connect4.play_human(-1)
 
 
 """ 6) Random VS QL """
+# connect4 = Connect4("Random", "QL")
+# connect4.play(1000)
+# connect4.play_human(-1)
 
 """
 ========== Self Game ==========
@@ -470,11 +457,13 @@ class Connect4:
 
 """ Random VS Random """
 # connect4 = Connect4("Random", "Random")
-# connect4.play(games=10000, is_savedata=True, save_filename="Random_Random_eachstep" + str(int(time.time())))
+# connect4.play(games=100000, traindata_flag=True, saveresults_flag=False,
+#               save_filename="Random_Random_eachstep" + str(int(time.time()))
+#               )
 
-""" NN VS Nn """
+""" NN VS NN """
 # connect4 = Connect4("NN", "NN")
-# connect4.play(games=1, is_savedata=False)
+# connect4.play(games=10)
 
 
 """ QL VS QL """
