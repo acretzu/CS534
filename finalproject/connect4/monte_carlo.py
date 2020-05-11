@@ -1,5 +1,5 @@
 from copy import deepcopy, copy
-from math import ceil
+from math import ceil, floor
 from random import randrange
 
 #from connect4 import Connect4
@@ -16,7 +16,7 @@ class Node:
 
 class MonteCarlo:
 
-    def __init__(self, player, c4, depth=50, rollouts=1000):
+    def __init__(self, player, c4, depth=100, rollouts=1000):
         self.root = Node(None, [])
         self.c4 = c4
         self.player = player
@@ -31,33 +31,38 @@ class MonteCarlo:
 
         return win_ratio
 
-    def select(self):
+    def select(self, degree):
         root = self.root
-        i = 0
+        level = 0
         while len(root.children) is not 0:
 
-            # Find Best Child
-            best = Node(root, [])
+            # Ratios
+            ratios = []
+
+            # Create list of ratios
             for child in root.children:
 
                 child_ratio = self.win_ratio(child)
-                best_ratio = self.win_ratio(best)
 
-                # choose a different one
-                if best_ratio == 1:
-                    best_ratio = 0
-                if child_ratio == 1:
-                    child_ratio = 0
+                # Add ratio to list
+                ratios.append(child)
 
-                if child_ratio >= best_ratio:
-                    best = child
+            # Sort
+            #print(ratios)
+            ratios.sort(key = lambda x: self.win_ratio(x))
+            #print(ratios)
 
-            i += 1
+            # Get best
+            if level is not 0:
+                degree = 0
+            best = ratios[len(ratios)-degree-1]
+
+            # Keep track of depth
+            level += 1
 
             root = best
 
         #print(root.children)
-
         #print("selected (", i , "): [", root.wins, root.count, "]")
         #print(root)
         return root
@@ -159,27 +164,37 @@ class MonteCarlo:
 
     def choose_col(self):
 
+        # 1st best, 2nd best, 3rd best, etc.
+        degree = 0
+
         # Create this moves tree with depth [range(x)]
         for i in range(self.depth):
 
             # Select best child
-            root = self.select()
+            root = self.select(degree)
 
             # Get board for this child
             game = self.get_board(root)
-            #print("selected:\n",game.__str__())
 
-            # Expand the child node
-            if game.has_winner() is 0 and game.full() is False:
+            if game.has_winner() is not 0 or game.full() is not False:
+                # we are stuck so we need to retry
+                if degree > 6:
+                    degree = 0
+                else:
+                    degree += 1
+
+                #print("trying degree: ", degree)
+
+            else:
+
+                #print(floor(self.rollouts / ((len(root.moves) + 1) ** 2)))
+                # print("selected:\n", game.__str__())
+
+                # Expand
                 self.expand(root)
 
-
-                #print(ceil(self.rollouts/((len(root.moves)+1)**2)))
                 # Simulate games for random children
-                for j in range(ceil(self.rollouts/((len(root.moves)+1)**2))):
-
-                    # Board is back to state of interest
-                    #print(game.board)
+                for j in range(floor(self.rollouts/((len(root.moves)+1) ** 2))):
 
                     col = randrange(7)
                     while self.simulate(deepcopy(game), root, col) is -1:
