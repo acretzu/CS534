@@ -63,7 +63,7 @@ class MonteCarlo:
             root = best
 
         #print(root.children)
-        #print("selected (", i , "): [", root.wins, root.count, "]")
+        #print("selected (", root.moves, "): [", root.wins, root.count, "]")
         #print(root)
         return root
 
@@ -73,17 +73,15 @@ class MonteCarlo:
             # Get prior moves and add the latest
             moves = copy(root.moves)
             moves.append(i)
-            #print("root moves",root.moves)
-            #print("child" , moves)
 
             # Expand
             root.children.append(Node(root, moves))
+            #print("expanded (", root.moves, "): [", root.wins, root.count, "]")
 
     def simulate(self, game, root, col):
         # Returns 0 if loss, 1 if won, -1 if the game cant be continued through that col
 
         if game.can_place(col) is False:
-            #print("cant place")
             return -1  # must try again at different column
 
         column = col
@@ -95,10 +93,7 @@ class MonteCarlo:
 
             column = randrange(7)
 
-        #print(game.has_winner())
-        #print(game.__str__())
         if game.has_winner() is self.player:
-            #print("win")
             root.children[col].count += 1
             root.children[col].wins += 1
             return 1
@@ -112,37 +107,24 @@ class MonteCarlo:
         past_wins = leaf.wins
         past_count = leaf.count
 
-        #print("leaf:", leaf.wins, leaf.count)
-
         # Update leaf
-        #print("children")
         for child in leaf.children:
             # Wins update
             leaf.wins += child.wins
-            #print(child.wins, child.count)
             leaf.count += child.count
 
-        #print("leaf (past wins): ", past_wins)
-        #print("leaf (wins): ", leaf.wins)
         new_wins = leaf.wins - past_wins
         new_count = leaf.count - past_count
 
-        #print("leaf (after):", leaf.wins, leaf.count)
+        #print("updated (", leaf.moves, "): [", past_wins, past_count, "]")
 
         while leaf.parent is not None:
-            #print("parent (before):", leaf.parent.wins, leaf.parent.count)
-
-            # Before update save past
-            #parent_past_wins = leaf.parent.wins
 
             # Add leaf wins
             leaf.parent.wins += new_wins
 
-            #print("new wins:", new_wins)
             # Add rollouts
             leaf.parent.count += new_count
-
-            #print("parent (after):",leaf.parent.wins, leaf.parent.count)
 
             # climb up path
             leaf = leaf.parent
@@ -152,13 +134,10 @@ class MonteCarlo:
 
         # Create temp board
         game = deepcopy(self.c4)
-        #print("root board:\n", game.__str__())
 
         for col in leaf.moves:
             if game.can_place(col):
                 game.place(col)
-
-        #print("selected:\n", game.__str__())
 
         return game
 
@@ -170,26 +149,28 @@ class MonteCarlo:
         # Create this moves tree with depth [range(x)]
         for i in range(self.depth):
 
+            #print(degree)
+
             # Select best child
             root = self.select(degree)
 
             # Get board for this child
             game = self.get_board(root)
 
-            if game.has_winner() is not 0 or game.full() is not False:
+            # Check if the tree is expandable
+            cell = 0
+            if len(root.moves) > 0:
+                cell = game.board[0][root.moves[len(root.moves) - 1]]
+            if game.has_winner() is not 0 or \
+                    game.full() is True or \
+                    cell is not 0:
                 # we are stuck so we need to retry
                 if degree > 6:
                     degree = 0
                 else:
                     degree += 1
-
-                #print("trying degree: ", degree)
-
             else:
-
-                #print(floor(self.rollouts / ((len(root.moves) + 1) ** 2)))
-                # print("selected:\n", game.__str__())
-
+                #print("expand")
                 # Expand
                 self.expand(root)
 
@@ -207,7 +188,6 @@ class MonteCarlo:
         best = Node(None, [])
         index = 0
         for i in range(len(self.root.children)):
-            #print(self.root.children[i].count)
 
             if self.root.children[i].count is 0:
                 child_ratio = 0
@@ -220,8 +200,6 @@ class MonteCarlo:
                 best_ratio = best.wins / best.count
 
             if child_ratio >= best_ratio:
-                #print("child", child_ratio)
-                #print("best", best_ratio)
                 best = self.root.children[i]
                 index = i
 
@@ -232,7 +210,7 @@ class MonteCarlo:
         if len(root.children) is not 0:
             i = 0
             for child in root.children:
-                #print(i+1, ": [", self.win_ratio(child), child.wins, child.count, "]")
+                print(i+1, ": [", self.win_ratio(child), child.wins, child.count, "]")
                 i += 1
 
 

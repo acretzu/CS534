@@ -179,8 +179,8 @@ class Connect4:
             for c in range(len(self.board[0])):
                 foo += self.int2str(self.prev_board[r][c]) + " "
             foo += "\n"
-        print("Prev_board:")
-        print(foo)
+        #print("Prev_board:")
+        #print(foo)
 
         # Add player to bottom-most row
         for h in reversed(range(6)):
@@ -269,9 +269,6 @@ class Connect4:
 
         iter_n = games
 
-        # p1 = QLearner(1)
-        # p2 = MonteCarlo(2, self, depth=5, rollouts=500)
-
         # Select player1 outside of game loop
         if self.player1 == "Random":
             p1 = RandomPlayer(self.available_columns())
@@ -318,8 +315,7 @@ class Connect4:
                         p1.learn()
 
                     elif self.player1 == "MonteCarlo":
-                        p2 = MonteCarlo(1, self)
-                        self.place(p2.choose_col())
+                        self.place(p1.choose_col())
 
                     elif self.player1 == "NN":
                         self.place(p1.choose_col())
@@ -384,9 +380,8 @@ class Connect4:
         Main game loop. Waits for human input.
         """
         opp = QLearner(1, self)
-        while self.has_winner() == 0:
 
-            print("1 2 3 4 5 6 7")
+        while self.has_winner() == 0:
 
             # opp = MonteCarlo(1, self, depth=100, rollouts=1000)
 
@@ -410,7 +405,7 @@ class Connect4:
         if self.has_winner() is player:
             print("You won!")
         else:
-            print("The winner is MarcBot!")
+            print("The winner is Bot!")
         self.clear_board()
 
 
@@ -450,11 +445,11 @@ connect4 = Connect4("QL", "MonteCarlo")
 connect4.play(10)
 
 """ 5) Random VS MonteCarlo """
-# connect4 = Connect4("Random", "MonteCarlo")
-# connect4.play(games=100)
+# connect4 = Connect4("Human", "QL")
+#connect4.play(games=100)
 # while True:
 #     print(connect4.__str__())
-#     connect4.play_human(1)
+#     connect4.play_human(-1)
 
 
 # connect4 = Connect4("Random", "MonteCarlo")
