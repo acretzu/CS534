@@ -271,7 +271,7 @@ class Connect4:
 
         # Select player1 outside of game loop
         if self.player1 == "Random":
-            p1 = RandomPlayer(self.available_columns())
+            p1 = RandomPlayer(self)
         elif self.player1 == "QL":
             p1 = QLearner(1, self)
         elif self.player1 == "MonteCarlo":
@@ -282,7 +282,7 @@ class Connect4:
 
         # Select player1 outside of game loop
         if self.player2 == "Random":
-            p2 = RandomPlayer(self.available_columns())
+            p2 = RandomPlayer(self)
         elif self.player2 == "QL":
             p2 = QLearner(-1, self)
         elif self.player2 == "MonteCarlo":
@@ -420,6 +420,7 @@ class Connect4:
 
 """ 1) Random VS NN  """
 # connect4 = Connect4("NN", "Random")
+# connect4.play(100)
 # connect4 = Connect4("Random", "NN")
 # connect4.play(100)
 
@@ -441,8 +442,8 @@ class Connect4:
 """ 4) QL VS MonteCarlo"""
 # connect4 = Connect4("MonteCarlo", "QL")
 # connect4.play(10)
-connect4 = Connect4("QL", "MonteCarlo")
-connect4.play(10)
+# connect4 = Connect4("QL", "MonteCarlo")
+# connect4.play(10)
 
 """ 5) Random VS MonteCarlo """
 # connect4 = Connect4("Human", "QL")
@@ -452,15 +453,19 @@ connect4.play(10)
 #     connect4.play_human(-1)
 
 
-# connect4 = Connect4("Random", "MonteCarlo")
-# connect4.play(games=100)
+connect4 = Connect4("Random", "MonteCarlo")
+connect4.play(games=10)
+connect4 = Connect4("MonteCarlo", "Random")
+connect4.play(games=10)
 # print(connect4.__str__())
 # connect4.play_human(-1)
 
 
 """ 6) Random VS QL """
 # connect4 = Connect4("Random", "QL")
-# connect4.play(1000)
+# connect4.play(100)
+# connect4 = Connect4("QL", "Random")
+# connect4.play(100)
 # connect4.play_human(-1)
 
 """
