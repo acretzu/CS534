@@ -425,8 +425,8 @@ class Connect4:
 # connect4.play(100)
 
 """ 2) MonteCarlo VS NN """
-# connect4 = Connect4("NN", "MonteCarlo")
-# connect4.play(games=10)
+connect4 = Connect4("NN", "MonteCarlo")
+connect4.play(100)
 # connect4 = Connect4("MonteCarlo","NN")
 # connect4.play(games=10)
 
@@ -442,8 +442,8 @@ class Connect4:
 """ 4) QL VS MonteCarlo"""
 # connect4 = Connect4("MonteCarlo", "QL")
 # connect4.play(10)
-# connect4 = Connect4("QL", "MonteCarlo")
-# connect4.play(10)
+connect4 = Connect4("QL", "MonteCarlo")
+connect4.play(100)
 
 """ 5) Random VS MonteCarlo """
 # connect4 = Connect4("Human", "QL")
@@ -453,10 +453,10 @@ class Connect4:
 #     connect4.play_human(-1)
 
 
-connect4 = Connect4("Random", "MonteCarlo")
-connect4.play(games=10)
-connect4 = Connect4("MonteCarlo", "Random")
-connect4.play(games=10)
+# connect4 = Connect4("Random", "MonteCarlo")
+# connect4.play(games=10)
+# connect4 = Connect4("MonteCarlo", "Random")
+# connect4.play(games=10)
 # print(connect4.__str__())
 # connect4.play_human(-1)
 
