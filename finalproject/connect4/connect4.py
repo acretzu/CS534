@@ -291,21 +291,37 @@ class Connect4:
             p2 = NN_Player(-1, self)
             # p2 = NN_Player(-1, self.board, self.available_columns())
 
+        # record the total time each player uses in each game
+
+        total_time_player1 = []
+        total_time_player2 = []
+
         while games > 0:
             print("Play iteration = ", games)
 
             # record total move in each game
             total_move = 0
 
+            # record the total time each player uses in each game
+            player1_time = 0
+            player2_time = 0
+
             while self.has_winner() == 0:
 
                 # print(self.board)
 
                 if self.full():
+
                     print("It's a draw!")
+                    print("Player 1 uses: ", player1_time, "s")
+                    print("player 2 uses: ", player2_time, "s")
+
                     break
 
                 if self.turn == 1:
+
+                    start_time = time.time()
+
                     # Which Strategy for Palyer 1
                     if self.player1 == "Random":
                         self.place(p1.choose_col())
@@ -323,7 +339,13 @@ class Connect4:
                     if self.player2 == "QL":
                         p2.check_if_lost()
 
+                    end_time = time.time()
+
+                    player1_time = player1_time + (end_time - start_time)
+
                 else:
+
+                    start_time = time.time()
 
                     # Which Strategy for Palyer 2
                     if self.player2 == "Random":
@@ -342,6 +364,10 @@ class Connect4:
                     if self.player1 == "QL":
                         p1.check_if_lost()
 
+                    end_time = time.time()
+
+                    player2_time = player2_time + (end_time - start_time)
+
                 if traindata_flag:
                     # add features for training data for NN
                     traindata_feature.append(np.array(self.board).reshape(42))
@@ -356,8 +382,12 @@ class Connect4:
             # complete results
             if saveresults_flag:
                 traindata_target.append(self.target())
+                total_time_player1.append(player1_time)
+                total_time_player2.append(player2_time)
 
             print("The winner is player ", self.has_winner())
+            print("Player 1 uses: ", player1_time, "s")
+            print("player 2 uses: ", player2_time, "s")
 
             self.clear_board()
             games -= 1
@@ -371,9 +401,19 @@ class Connect4:
 
         # save game results for comparison
         if saveresults_flag:
+            results = np.array([traindata_target, total_time_player1, total_time_player2]).T
+            fmt = '%10.0f', '%10.10f', '%10.10f'
             np.savetxt(
                 'Game_results/' + self.player1 + '_' + self.player2 + '_' + str(iter_n) + '_' + save_filename + '.csv',
-                traindata_target, delimiter=',', fmt='%10.0f')
+                results, delimiter=',', fmt=fmt, header="win,Player1_time, Player2_time")
+
+        print("-------------Among all the games----------------- ")
+        print("Player 1 is ", self.player1)
+        print("Player 2 is ", self.player2)
+        print("Total games Player 1 wins: ", sum([i for i in traindata_target if i == 1]))
+        print("Total games Player 2 wins: ", sum([i for i in traindata_target if i == -1])*(-1))
+        print("Total Time Player 1 takes: ", sum(total_time_player1), "s")
+        print("Total Time Player 2 takes: ", sum(total_time_player2), "s")
 
     def play_human(self, player):
         """
@@ -426,14 +466,14 @@ class Connect4:
 
 """ 2) MonteCarlo VS NN """
 connect4 = Connect4("NN", "MonteCarlo")
-connect4.play(100)
+connect4.play(10)
 # connect4 = Connect4("MonteCarlo","NN")
 # connect4.play(games=10)
 
 
 """ 3) QL VS NN  """
 # connect4 = Connect4("NN", "QL")
-# connect4.play(100)
+# connect4.play(1)
 # connect4 = Connect4("QL", "NN")
 # connect4.play(100)
 # connect4.play_human(-1);
@@ -442,8 +482,8 @@ connect4.play(100)
 """ 4) QL VS MonteCarlo"""
 # connect4 = Connect4("MonteCarlo", "QL")
 # connect4.play(10)
-connect4 = Connect4("QL", "MonteCarlo")
-connect4.play(100)
+# connect4 = Connect4("QL", "MonteCarlo")
+# connect4.play(100)
 
 """ 5) Random VS MonteCarlo """
 # connect4 = Connect4("Human", "QL")
