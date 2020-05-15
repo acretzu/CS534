@@ -1,4 +1,6 @@
 #! /usr/bin/python3.6
+from optparse import OptionParser
+
 from termcolor import colored
 import sys
 import pandas as pd
@@ -179,8 +181,8 @@ class Connect4:
             for c in range(len(self.board[0])):
                 foo += self.int2str(self.prev_board[r][c]) + " "
             foo += "\n"
-        #print("Prev_board:")
-        #print(foo)
+        # print("Prev_board:")
+        # print(foo)
 
         # Add player to bottom-most row
         for h in reversed(range(6)):
@@ -311,7 +313,6 @@ class Connect4:
                 # print(self.board)
 
                 if self.full():
-
                     print("It's a draw!")
                     print("Player 1 uses: ", player1_time, "s")
                     print("player 2 uses: ", player2_time, "s")
@@ -411,21 +412,40 @@ class Connect4:
         print("Player 1 is ", self.player1)
         print("Player 2 is ", self.player2)
         print("Total games Player 1 wins: ", sum([i for i in traindata_target if i == 1]))
-        print("Total games Player 2 wins: ", sum([i for i in traindata_target if i == -1])*(-1))
+        print("Total games Player 2 wins: ", sum([i for i in traindata_target if i == -1]) * (-1))
         print("Total Time Player 1 takes: ", sum(total_time_player1), "s")
         print("Total Time Player 2 takes: ", sum(total_time_player2), "s")
 
-    def play_human(self, player):
+    def play_human(self, alg, player):
         """
         Main game loop. Waits for human input.
         """
-        #opp = QLearner(1, self)
 
+        if player is 1:
+            opp = -1
+            player = 1
+        elif player is 2:
+            opp = 1
+            player = -1
+        else:
+            print("Player options: 1, 2")
+            return
+
+        if alg == "QL":
+            o = QLearner(opp, self)
+        elif alg == "MonteCarlo":
+            o = MonteCarlo(opp, self)
+        elif alg == "NN":
+            o = NN_Player(opp, self)
+        else:
+            print("Algorithm options: [MonteCarlo, QL, NN]")
+            return
+
+        print(self.__str__())
+        print("1 2 3 4 5 6 7")
+
+        i = 0
         while self.has_winner() == 0:
-
-            opp = MonteCarlo(-1, self, depth=100, rollouts=1000)
-
-            print("1 2 3 4 5 6 7")
 
             if self.full():
                 print("It's a draw!")
@@ -434,15 +454,26 @@ class Connect4:
             if self.turn is player:
                 human_move = int(raw_input(">>> "))
                 self.place_with_print(human_move - 1)
-                #opp.check_if_lost()
+
+                if alg == "QL":
+                    o.check_if_lost()
+
             else:
-                opp_move = opp.choose_col()
-                #opp.learn()
-                # while self.can_place(opp_move) is False:
-                #    print(opp_move)
-                #    opp_move = opp.choose_col()
-                opp.print(opp.root)
-                self.place_with_print(opp_move)
+                if alg == "MonteCarlo":
+                    o = MonteCarlo(opp, self, depth=100, rollouts=1000)
+                    move = o.choose_col()
+                    self.place_with_print(move)
+                elif alg == "QL":
+                    o.learn()
+                    print(self.__str__())
+                elif alg == "NN":
+                    move = o.choose_col()
+                    self.place_with_print(move)
+
+            print("1 2 3 4 5 6 7")
+
+
+            i += 1
 
         if self.has_winner() is player:
             print("You won!")
@@ -454,6 +485,31 @@ class Connect4:
 ############
 # Main Start
 ############
+def parse_cmd_line_options():
+    parser = OptionParser()
+    parser.add_option("--a", action="store", type="string", dest="algorithm", default="MonteCarlo",
+                      help="The algorithm to play against: [MonteCarlo, QL, NN]")
+    parser.add_option("--p", action="store", type="int", dest="player", default=1,
+                      help="Player 1 or 2")
+
+    (options, args) = parser.parse_args()
+
+    # Make sure all arguments are provided
+    if not options.algorithm or not options.player:
+        print("Execution requires all arguments.")
+        sys.exit(1)
+
+    return options
+
+
+np.set_printoptions(threshold=np.inf)
+__options__ = parse_cmd_line_options()
+
+alg = __options__.algorithm
+player = __options__.player
+
+connect4 = Connect4(" ", " ")
+connect4.play_human(alg, player)
 
 
 """
@@ -467,8 +523,8 @@ class Connect4:
 # connect4.play(100)
 
 """ 2) MonteCarlo VS NN """
-#connect4 = Connect4("NN", "MonteCarlo")
-#connect4.play(10)
+# connect4 = Connect4("NN", "MonteCarlo")
+# connect4.play(10)
 # connect4 = Connect4("MonteCarlo","NN")
 # connect4.play(games=10)
 
@@ -489,12 +545,11 @@ class Connect4:
 # connect4.play(100)
 
 """ 5) Random VS MonteCarlo """
-connect4 = Connect4("Human", "QL")
-#connect4.play(games=100)
-while True:
- print(connect4.__str__())
- connect4.play_human(1)
-
+#connect4 = Connect4("Human", "QL")
+# connect4.play(games=100)
+#while True:
+#    print(connect4.__str__())
+#    connect4.play_human(1)
 
 # connect4 = Connect4("Random", "MonteCarlo")
 # connect4.play(games=10)
