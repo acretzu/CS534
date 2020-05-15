@@ -2,7 +2,8 @@ from copy import deepcopy, copy
 from math import ceil, floor
 from random import randrange
 
-#from connect4 import Connect4
+
+# from connect4 import Connect4
 
 
 class Node:
@@ -41,30 +42,29 @@ class MonteCarlo:
 
             # Create list of ratios
             for child in root.children:
-
                 child_ratio = self.win_ratio(child)
 
                 # Add ratio to list
                 ratios.append(child)
 
             # Sort
-            #print(ratios)
-            ratios.sort(key = lambda x: self.win_ratio(x))
-            #print(ratios)
+            # print(ratios)
+            ratios.sort(key=lambda x: self.win_ratio(x))
+            # print(ratios)
 
             # Get best
             if level is not 0:
                 degree = 0
-            best = ratios[len(ratios)-degree-1]
+            best = ratios[len(ratios) - degree - 1]
 
             # Keep track of depth
             level += 1
 
             root = best
 
-        #print(root.children)
-        #print("selected (", root.moves, "): [", root.wins, root.count, "]")
-        #print(root)
+        # print(root.children)
+        # print("selected (", root.moves, "): [", root.wins, root.count, "]")
+        # print(root)
         return root
 
     def expand(self, root):
@@ -76,7 +76,7 @@ class MonteCarlo:
 
             # Expand
             root.children.append(Node(root, moves))
-            #print("expanded (", root.moves, "): [", root.wins, root.count, "]")
+            # print("expanded (", root.moves, "): [", root.wins, root.count, "]")
 
     def simulate(self, game, root, col):
         # Returns 0 if loss, 1 if won, -1 if the game cant be continued through that col
@@ -116,10 +116,9 @@ class MonteCarlo:
         new_wins = leaf.wins - past_wins
         new_count = leaf.count - past_count
 
-        #print("updated (", leaf.moves, "): [", past_wins, past_count, "]")
+        # print("updated (", leaf.moves, "): [", past_wins, past_count, "]")
 
         while leaf.parent is not None:
-
             # Add leaf wins
             leaf.parent.wins += new_wins
 
@@ -149,10 +148,10 @@ class MonteCarlo:
         # Create this moves tree with depth [range(x)]
         for i in range(self.depth):
 
-            #print(degree)
+            # print(degree)
 
             # Select best child
-            root = self.select(degree)
+            root = self.select(0)
 
             # Get board for this child
             game = self.get_board(root)
@@ -170,12 +169,14 @@ class MonteCarlo:
                 else:
                     degree += 1
             else:
-                #print("expand")
+                # print("expand")
                 # Expand
                 self.expand(root)
 
+                #print(floor(self.rollouts / ((len(root.moves) + 1) ** 2)))
+
                 # Simulate games for random children
-                for j in range(floor(self.rollouts/((len(root.moves)+1) ** 2))):
+                for j in range(floor(self.rollouts / ((len(root.moves) + 1) ** 2))):
 
                     col = randrange(7)
                     while self.simulate(deepcopy(game), root, col) is -1:
@@ -203,21 +204,58 @@ class MonteCarlo:
                 best = self.root.children[i]
                 index = i
 
+        height = self.get_height(self.root)
+        #print(height)
+        #print("root: [", self.root.wins, self.root.count, "]")
+        #self.print_tree(self.root, height)
+
         # Return the chosen column
         return index
+
+    def print_tree(self, root, height):
+        for i in range(height):
+            self.print_level(root, 0, target_level=i)
+
+    def get_height(self, root):
+        if len(root.children) is not 0:
+
+            return 1 + max(self.get_height(root.children[0]),
+                           self.get_height(root.children[1]),
+                           self.get_height(root.children[2]),
+                           self.get_height(root.children[3]),
+                           self.get_height(root.children[4]),
+                           self.get_height(root.children[5]),
+                           self.get_height(root.children[6]))
+
+        else:
+
+            return 0
+
+    def print_level(self, root, level, target_level):
+        current_level = level
+        if len(root.children) is not 0:
+            i = 1
+            level += 1
+            if current_level is target_level:
+                s = ""
+                for child in root.children:
+                    s = s + "[ " + str(child.wins) + "/" + str(child.count) + " ], "
+                    i += 1
+                print("level", level, "-", root.moves, "  (", s, ") ")
+            else:
+                for child in root.children:
+                    self.print_level(child, level=level, target_level=target_level)
 
     def print(self, root):
         if len(root.children) is not 0:
             i = 0
             for child in root.children:
-                print(i+1, ": [", self.win_ratio(child), child.wins, child.count, "]")
+                print(i + 1, ": [", self.win_ratio(child), child.wins, child.count, "]")
                 i += 1
 
-
-
-#connect4 = Connect4("Random", "Random")
-#P1 = MonteCarlo(1, connect4)
-#P2 = MonteCarlo(2, connect4)
+# connect4 = Connect4("Random", "Random")
+# P1 = MonteCarlo(1, connect4)
+# P2 = MonteCarlo(2, connect4)
 
 # root = P1.select()
 # P1.expand(root)
@@ -233,5 +271,3 @@ class MonteCarlo:
 # while connect4.has_winner() is 0:
 #     print(P2.choose_col())
 #     P2.print(P2.root)
-
-

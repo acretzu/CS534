@@ -379,11 +379,13 @@ class Connect4:
         """
         Main game loop. Waits for human input.
         """
-        opp = QLearner(1, self)
+        #opp = QLearner(1, self)
 
         while self.has_winner() == 0:
 
-            # opp = MonteCarlo(1, self, depth=100, rollouts=1000)
+            opp = MonteCarlo(-1, self, depth=100, rollouts=1000)
+
+            print("1 2 3 4 5 6 7")
 
             if self.full():
                 print("It's a draw!")
@@ -392,15 +394,15 @@ class Connect4:
             if self.turn is player:
                 human_move = int(raw_input(">>> "))
                 self.place_with_print(human_move - 1)
-                opp.check_if_lost()
+                #opp.check_if_lost()
             else:
-                # opp_move = opp.choose_col()
-                opp.learn()
+                opp_move = opp.choose_col()
+                #opp.learn()
                 # while self.can_place(opp_move) is False:
                 #    print(opp_move)
                 #    opp_move = opp.choose_col()
-                # opp.print(opp.root)
-                # self.place_with_print(opp_move)
+                opp.print(opp.root)
+                self.place_with_print(opp_move)
 
         if self.has_winner() is player:
             print("You won!")
@@ -425,8 +427,8 @@ class Connect4:
 # connect4.play(100)
 
 """ 2) MonteCarlo VS NN """
-connect4 = Connect4("NN", "MonteCarlo")
-connect4.play(100)
+#connect4 = Connect4("NN", "MonteCarlo")
+#connect4.play(100)
 # connect4 = Connect4("MonteCarlo","NN")
 # connect4.play(games=10)
 
@@ -442,15 +444,15 @@ connect4.play(100)
 """ 4) QL VS MonteCarlo"""
 # connect4 = Connect4("MonteCarlo", "QL")
 # connect4.play(10)
-connect4 = Connect4("QL", "MonteCarlo")
-connect4.play(100)
+#connect4 = Connect4("QL", "MonteCarlo")
+#connect4.play(100)
 
 """ 5) Random VS MonteCarlo """
-# connect4 = Connect4("Human", "QL")
+connect4 = Connect4("Human", "QL")
 #connect4.play(games=100)
-# while True:
-#     print(connect4.__str__())
-#     connect4.play_human(-1)
+while True:
+ print(connect4.__str__())
+ connect4.play_human(1)
 
 
 # connect4 = Connect4("Random", "MonteCarlo")
